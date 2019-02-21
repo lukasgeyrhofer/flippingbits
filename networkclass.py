@@ -20,8 +20,10 @@ class NetworkDynamics(object):
         self.__connections          = self.GenerateTopology() * self.GenerateConnectionStrength()
         
         self.__step                 = 0
-        self.__lastupdate           = -np.ones(self.__size,dtype=np.int)
-        self.__updatehisto          = np.array([],dtype=np.int)
+        self.__lastupdate_nodes     = -np.ones(self.__size,dtype=np.int)
+        self.__lastupdate_input     = -np.ones(self.__size,dtype=np.int)
+        self.__updatehisto_nodes    = np.array([],dtype=np.int)
+        self.__updatehisto_input    = np.array([],dtype=np.int)
 
         
     def step(self):
@@ -36,7 +38,7 @@ class NetworkDynamics(object):
             # record event if xi flips sign
             if np.sign(self.__nodes[nodeID]) != np.sign(tmpNodeCopy[nodeID]):
                 self.UpdateHisto(nodeID)
-                self.__lastupdate[nodeID] = self.__step
+                self.__lastupdate_nodes[nodeID] = self.__step
         self.__step += 1
 
 
@@ -71,15 +73,15 @@ class NetworkDynamics(object):
     
     
     def UpdateHisto(self,nodeID):
-        if self.__lastupdate[nodeID] >= 0:
-            if len(self.__updatehisto) <= self.__step - self.__lastupdate[nodeID]:
-                self.__updatehisto = np.concatenate([self.__updatehisto,np.zeros(self.__step - self.__lastupdate[nodeID] - len(self.__updatehisto)+1,dtype=np.int)])
-            self.__updatehisto[self.__step - self.__lastupdate[nodeID]] += 1
+        if self.__lastupdate_nodes[nodeID] >= 0:
+            if len(self.__updatehisto_nodes) <= self.__step - self.__lastupdate_nodes[nodeID]:
+                self.__updatehisto_nodes = np.concatenate([self.__updatehisto_nodes,np.zeros(self.__step - self.__lastupdate_nodes[nodeID] - len(self.__updatehisto_nodes)+1,dtype=np.int)])
+            self.__updatehisto_nodes[self.__step - self.__lastupdate_nodes[nodeID]] += 1
     
     
     def __getattr__(self,key):
         if key == 'updatehisto':
-            return self.__updatehisto
+            return self.__updatehisto_nodes
         elif key == 'nodes':
             return self.__nodes
         elif key == 'connections':

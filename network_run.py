@@ -22,16 +22,17 @@ def Pxflip(step, r = .1, K = 5):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-N","--NetworkSize",default=100,type = int)
-    parser.add_argument("-s","--Steps",default=1000,type=int)
+    parser.add_argument("-S","--Steps",default=1000,type=int)
     parser.add_argument("-n","--reruns", default=20,type=int)
     parser.add_argument("-r","--UpdateRate", default = .1, type=float)
     parser.add_argument("-K","--K", default = 5, type = int)
+    parser.add_argument("-o","--HistoOutfile", default = 'histo.txt', type = str)
     args = parser.parse_args()
 
     histo = list()
 
     for n in range(args.reruns):
-        #print('{}'.format(n))
+        print('simulating network #{}'.format(n))
         network = nc.NetworkDynamics(**vars(args))
         network.run(args.Steps)
         histo.append(network.updatehisto)
@@ -42,8 +43,11 @@ def main():
         totalhisto[:len(h)] += h
     
     icount = 1./np.sum(totalhisto)
-    for t,h in enumerate(totalhisto):
-        print('{:4d} {:e} {:e}'.format(t,h*icount),Pxflip(t,args.UpdateRate,args.K))
+    
+    a = np.arange(l)
+    p = Pxflip(a,args.UpdateRate,args.K)
+    
+    np.savetxt(args.HistoOutfile,np.array([a,totalhisto * icount, p]).T)
 
 if __name__ == "__main__":
     main()
