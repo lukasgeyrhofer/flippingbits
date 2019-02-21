@@ -4,7 +4,7 @@ import sys,math
 class NetworkDynamics(object):
     def __init__(self,**kwargs):
         self.__size                 = kwargs.get('NetworkSize',100)
-        self.__r                    = kwargs.get('r',.1)
+        self.__r                    = kwargs.get('UpdateRate',.1)
 
         self.__intopology           = dict()
         self.__intopology['K']      = kwargs.get('K',5)
