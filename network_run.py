@@ -27,12 +27,14 @@ def main():
     parser.add_argument("-r","--UpdateRate", default = .1, type=float)
     parser.add_argument("-K","--K", default = 5, type = int)
     parser.add_argument("-o","--HistoOutfile", default = 'histo.txt', type = str)
+    parser.add_argument("-v","--verbose", action = "store_true", default = False)
     args = parser.parse_args()
 
     histo = list()
 
     for n in range(args.reruns):
-        print('simulating network #{}'.format(n))
+        if args.verbose:
+            print('simulating network #{}'.format(n))
         network = nc.NetworkDynamics(**vars(args))
         network.run(args.Steps)
         histo.append(network.updatehisto)
@@ -47,6 +49,8 @@ def main():
     a = np.arange(l)
     p = Pxflip(a,args.UpdateRate,args.K)
     
+    if args.verbose:
+        print("save histogram recordings to '{}'".format(args.HistoOutfile))
     np.savetxt(args.HistoOutfile,np.array([a,totalhisto * icount, p]).T)
 
 if __name__ == "__main__":
