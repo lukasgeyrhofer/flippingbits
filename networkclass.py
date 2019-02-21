@@ -3,23 +3,37 @@ import sys,math
 
 class NetworkDynamics(object):
     def __init__(self,**kwargs):
-        self.__size  = kwargs.get('NetworkSize',100)
-        self.__k     = kwargs.get('K',5)
-        self.__r     = kwargs.get('r',.1)
+        self.__size                 = kwargs.get('NetworkSize',100)
+        self.__r                    = kwargs.get('r',.1)
+
+        self.__intopology           = dict()
+        self.__intopology['K']      = kwargs.get('K',5)
+        self.__intopology['type']   = kwargs.get('InTopType','deltaK')
         
-        self.__nodes       = self.InitializeNodes()
-        self.__connections = self.GenerateTopology() * self.GenerateConnectionStrength()
+        self.__outtopology          = dict()
+        self.__outtopology['type']  = kwargs.get('OutTopType','binomial')
         
-        self.__step  = 0
-        self.__lastupdate = -np.ones(self.__size,dtype=np.int)
-        self.__updatehisto = np.array([])
+        self.__connections          = dict()
+        self.__connections['distr'] = kwargs.get('ConnectionDistr','pm1')
+        
+        self.__nodes                = self.InitializeNodes()
+        self.__connections          = self.GenerateTopology() * self.GenerateConnectionStrength()
+        
+        self.__step                 = 0
+        self.__lastupdate           = -np.ones(self.__size,dtype=np.int)
+        self.__updatehisto          = np.array([],dtype=np.int)
 
         
     def step(self):
+        # get vector of nodes to update
         update = np.random.choice([True,False], p = [self.__r, 1 - self.__r], size = self.__size)
+        
         tmpNodeCopy = np.copy(self.__nodes)
+        
         for nodeID in np.arange(self.__size)[update]:
+            # xi = \sum_j wij sign(xj)
             self.__nodes[nodeID] = np.dot(self.__connections[nodeID],np.sign(tmpNodeCopy))
+            # record event if xi flips sign
             if np.sign(self.__nodes[nodeID]) != np.sign(tmpNodeCopy[nodeID]):
                 self.UpdateHisto(nodeID)
                 self.__lastupdate[nodeID] = self.__step
@@ -31,12 +45,11 @@ class NetworkDynamics(object):
             self.step()
 
 
-    def GenerateTopology(self, indegree = 'deltaK', outdegree = 'binomial', inparams = {}, outparams = {}):
+    def GenerateTopology(self):
         tmpadj = np.zeros((self.__size,self.__size),dtype=np.int)
-        if indegree == 'deltaK' and outdegree == 'binomial':
+        if self.__intopology['type'] == 'deltaK' and self.__outtopology['type'] == 'binomial':
             for i in range(self.__size):
-                k = inparams.get('K',5)
-                connections = np.random.choice(self.__size, k, replace = False)
+                connections = np.random.choice(self.__size, self.__intopology.get('K',5), replace = False)
                 tmpadj[i][connections] = 1
         else:
             raise NotImplementedError
@@ -44,9 +57,9 @@ class NetworkDynamics(object):
         return tmpadj
     
     
-    def GenerateConnectionStrength(self,weightdistr = 'pm1',**kwargs):
+    def GenerateConnectionStrength(self):
         tmpcs = np.zeros((self.__size,self.__size),dtype=np.float)
-        if weightdistr == 'pm1':
+        if self.__connections['distr'] == 'pm1':
             tmpcs = np.random.choice([-1,1],size = (self.__size,self.__size))
         else:
             raise NotImplementedError
@@ -54,13 +67,13 @@ class NetworkDynamics(object):
     
     
     def InitializeNodes(self):
-        return 2 * np.random.binomial(self.__k,.5,self.__size) - self.__k
+        return 2 * np.random.binomial(self.__intopology['K'],.5,self.__size) - self.__intopology['K']
     
     
     def UpdateHisto(self,nodeID):
         if self.__lastupdate[nodeID] >= 0:
             if len(self.__updatehisto) <= self.__step - self.__lastupdate[nodeID]:
-                self.__updatehisto = np.concatenate([self.__updatehisto,np.zeros(self.__step - self.__lastupdate[nodeID] - len(self.__updatehisto)+1)])
+                self.__updatehisto = np.concatenate([self.__updatehisto,np.zeros(self.__step - self.__lastupdate[nodeID] - len(self.__updatehisto)+1,dtype=np.int)])
             self.__updatehisto[self.__step - self.__lastupdate[nodeID]] += 1
     
     
