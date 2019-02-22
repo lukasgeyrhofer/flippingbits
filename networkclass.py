@@ -24,22 +24,36 @@ class NetworkDynamics(object):
         self.__lastupdate_input     = -np.ones(self.__size,dtype=np.int)
         self.__updatehisto_nodes    = np.array([],dtype=np.int)
         self.__updatehisto_input    = np.array([],dtype=np.int)
+        self.__sInputBefore         = np.array(self.__size,dtype=np.float)
 
         
     def step(self):
         # get vector of nodes to update
-        update = np.random.choice([True,False], p = [self.__r, 1 - self.__r], size = self.__size)
+        update               = np.random.choice([True,False], p = [self.__r, 1 - self.__r], size = self.__size)
         
-        tmpNodeCopy = np.copy(self.__nodes)
+        # copy nodes and compute full dynamics
+        tmpNodeCopy          = np.copy(self.__nodes)
+        sInput               = np.dot(self.__connections,np.sign(tmpNodeCopy))
         
-        for nodeID in np.arange(self.__size)[update]:
-            # xi = \sum_j wij sign(xj)
-            self.__nodes[nodeID] = np.dot(self.__connections[nodeID],np.sign(tmpNodeCopy))
-            # record event if xi flips sign
-            if np.sign(self.__nodes[nodeID]) != np.sign(tmpNodeCopy[nodeID]):
-                self.UpdateHisto(nodeID)
-                self.__lastupdate_nodes[nodeID] = self.__step
-        self.__step += 1
+        # update nodes with probability r
+        self.__nodes[update] = sInput[update]
+        
+        print(self.__nodes)
+        
+        # check, where changes occurred
+        # record histograms for node and input flip times
+        updateNodesHisto     = np.where(np.sign(self.__nodes) == np.sign(tmpNodeCopy),True,False)
+        updateInputHisto     = np.where(np.sign(sInput) == np.sign(self.__sInputBefore),True,False)
+        
+        self.UpdateXHisto(updateNodesHisto)
+        self.UpdateSHisto(updateInputHisto)
+        
+        self.__lastupdate_input[updateInputHisto] = self.__step
+        self.__lastupdate_nodes[updateNodesHisto] = self.__step
+        
+        # prepare for next step
+        self.__sInputBefore  = sInput
+        self.__step         += 1
 
 
     def run(self,steps = 1):
@@ -72,11 +86,23 @@ class NetworkDynamics(object):
         return 2 * np.random.binomial(self.__intopology['K'],.5,self.__size) - self.__intopology['K']
     
     
-    def UpdateHisto(self,nodeID):
-        if self.__lastupdate_nodes[nodeID] >= 0:
-            if len(self.__updatehisto_nodes) <= self.__step - self.__lastupdate_nodes[nodeID]:
-                self.__updatehisto_nodes = np.concatenate([self.__updatehisto_nodes,np.zeros(self.__step - self.__lastupdate_nodes[nodeID] - len(self.__updatehisto_nodes)+1,dtype=np.int)])
-            self.__updatehisto_nodes[self.__step - self.__lastupdate_nodes[nodeID]] += 1
+    def UpdateXHisto(self,updateNodesHisto):
+        for nodeID in np.arange(self.__size)[updateNodesHisto]:
+            if self.__lastupdate_nodes[nodeID] >= 0:
+                if len(self.__updatehisto_nodes) <= self.__step - self.__lastupdate_nodes[nodeID]:
+                    self.__updatehisto_nodes = np.concatenate([self.__updatehisto_nodes,np.zeros(self.__step - self.__lastupdate_nodes[nodeID] - len(self.__updatehisto_nodes)+1,dtype=np.int)])
+            
+                self.__updatehisto_nodes[self.__step - self.__lastupdate_nodes[nodeID]] += 1
+    
+    
+    def UpdateSHisto(self,updateInputHisto):
+        for nodeID in np.arange(self.__size)[updateInputHisto]:
+            if self.__lastupdate_input[nodeID] >= 0:
+                if len(self.__updatehisto_input) <= self.__step - self.__lastupdate_input[nodeID]:
+                    self.__updatehisto_input = np.concatenate([self.__updatehisto_input,np.zeros(self.__step - self.__lastupdate_input[nodeID] - len(self.__updatehisto_input)+1,dtype=np.int)])
+                
+                self.__updatehisto_input[self.__step - self.__lastupdate_input[nodeID]] += 1
+        
     
     
     def __getattr__(self,key):
