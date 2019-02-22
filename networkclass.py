@@ -25,6 +25,8 @@ class NetworkDynamics(object):
         self.__updatehisto_nodes    = np.array([],dtype=np.int)
         self.__updatehisto_input    = np.array([],dtype=np.int)
         self.__sInputBefore         = np.array(self.__size,dtype=np.float)
+        
+        self.__verbose              = kwargs.get("verbose",False)
 
         
     def step(self):
@@ -38,7 +40,8 @@ class NetworkDynamics(object):
         # update nodes with probability r
         self.__nodes[update] = sInput[update]
         
-        print(self.__nodes)
+        if self.__verbose:
+            print(self.__step,self.__nodes)
         
         # check, where changes occurred
         # record histograms for node and input flip times
