@@ -39,19 +39,19 @@ def main():
         network.run(args.Steps)
         histo.append(network.updatehisto)
     
-    l = np.max([len(h) for h in histo])
-    totalhisto = np.zeros(l,dtype = np.int)
+    histolen = np.max([len(h) for h in histo])
+    totalhisto = np.zeros(histolen,dtype = np.int)
     for h in histo:
         totalhisto[:len(h)] += h
     
     icount = 1./np.sum(totalhisto)
     
-    a = np.arange(l)
-    p = Pxflip(a,args.UpdateRate,args.K)
+    bins = np.arange(histolen)
+    p = Pxflip(bins,args.UpdateRate,args.K)
     
     if args.verbose:
         print("save histogram recordings to '{}'".format(args.HistoOutfile))
-    np.savetxt(args.HistoOutfile,np.array([a,totalhisto * icount, p]).T)
+    np.savetxt(args.HistoOutfile,np.array([bins,totalhisto * icount, p]).T)
 
 if __name__ == "__main__":
     main()

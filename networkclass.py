@@ -40,20 +40,21 @@ class NetworkDynamics(object):
         # update nodes with probability r
         self.__nodes[update] = sInput[update]
         
-        if self.__verbose:
-            print(self.__step,self.__nodes)
-        
         # check, where changes occurred
         # record histograms for node and input flip times
-        updateNodesHisto     = np.where(np.sign(self.__nodes) == np.sign(tmpNodeCopy),True,False)
-        updateInputHisto     = np.where(np.sign(sInput) == np.sign(self.__sInputBefore),True,False)
+        updateNodesHisto     = np.where(np.sign(self.__nodes) != np.sign(tmpNodeCopy),True,False)
+        updateInputHisto     = np.where(np.sign(sInput) != np.sign(self.__sInputBefore),True,False)
         
-        self.UpdateXHisto(updateNodesHisto)
-        self.UpdateSHisto(updateInputHisto)
+        xupdates = self.UpdateXHisto(updateNodesHisto,update)
+        supdates = self.UpdateSHisto(updateInputHisto)
         
         self.__lastupdate_input[updateInputHisto] = self.__step
         self.__lastupdate_nodes[updateNodesHisto] = self.__step
-        
+
+        # output
+        if self.__verbose:
+            print('{:5d} {:3d} {:3d} ['.format(self.__step,xupdates,supdates) + ' '.join(['{:3d}'.format(x) for x in self.__nodes]) + ']')
+
         # prepare for next step
         self.__sInputBefore  = sInput
         self.__step         += 1
@@ -89,23 +90,28 @@ class NetworkDynamics(object):
         return 2 * np.random.binomial(self.__intopology['K'],.5,self.__size) - self.__intopology['K']
     
     
-    def UpdateXHisto(self,updateNodesHisto):
+    def UpdateXHisto(self,updateNodesHisto,update):
+        countupdates = 0
         for nodeID in np.arange(self.__size)[updateNodesHisto]:
-            if self.__lastupdate_nodes[nodeID] >= 0:
+            if self.__lastupdate_nodes[nodeID] >= 0 and update[nodeID]:
                 if len(self.__updatehisto_nodes) <= self.__step - self.__lastupdate_nodes[nodeID]:
                     self.__updatehisto_nodes = np.concatenate([self.__updatehisto_nodes,np.zeros(self.__step - self.__lastupdate_nodes[nodeID] - len(self.__updatehisto_nodes)+1,dtype=np.int)])
             
                 self.__updatehisto_nodes[self.__step - self.__lastupdate_nodes[nodeID]] += 1
+                countupdates += 1
+        return countupdates
     
     
     def UpdateSHisto(self,updateInputHisto):
+        countupdates = 0
         for nodeID in np.arange(self.__size)[updateInputHisto]:
             if self.__lastupdate_input[nodeID] >= 0:
                 if len(self.__updatehisto_input) <= self.__step - self.__lastupdate_input[nodeID]:
                     self.__updatehisto_input = np.concatenate([self.__updatehisto_input,np.zeros(self.__step - self.__lastupdate_input[nodeID] - len(self.__updatehisto_input)+1,dtype=np.int)])
                 
                 self.__updatehisto_input[self.__step - self.__lastupdate_input[nodeID]] += 1
-        
+                countupdates += 1
+        return countupdates
     
     
     def __getattr__(self,key):
