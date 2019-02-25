@@ -30,28 +30,34 @@ def main():
     parser.add_argument("-v","--verbose", action = "store_true", default = False)
     args = parser.parse_args()
 
-    histo = list()
-
+    histoX = list()
+    histoS = list()
+    
     for n in range(args.reruns):
         if args.verbose:
             print('simulating network #{}'.format(n))
         network = nc.NetworkDynamics(**vars(args))
         network.run(args.Steps)
-        histo.append(network.updatehisto)
+        histoX.append(network.histoX)
+        histoS.append(network.histoS)
     
-    histolen = np.max([len(h) for h in histo])
-    totalhisto = np.zeros(histolen,dtype = np.int)
-    for h in histo:
-        totalhisto[:len(h)] += h
+    histolen = np.max([np.max([len(h) for h in histoX]),np.max([len(h) for h in histoS])])
+    totalhistoX = np.zeros(histolen,dtype = np.int)
+    totalhistoS = np.zeros(histolen,dtype = np.int)
+    for h in histoX:
+        totalhistoX[:len(h)] += h
+    for h in histoS:
+        totalhistoS[:len(h)] += h
     
-    icount = 1./np.sum(totalhisto)
+    icountX = 1./np.sum(totalhistoX)
+    icountS = 1./np.sum(totalhistoS)
     
     bins = np.arange(histolen)
     p = Pxflip(bins,args.UpdateRate,args.K)
     
     if args.verbose:
         print("save histogram recordings to '{}'".format(args.HistoOutfile))
-    np.savetxt(args.HistoOutfile,np.array([bins,totalhisto * icount, p]).T)
+    np.savetxt(args.HistoOutfile,np.array([bins,totalhistoX * icountX, totalhistoS * icountS, p]).T)
 
 if __name__ == "__main__":
     main()

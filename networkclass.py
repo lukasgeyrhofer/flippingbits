@@ -115,8 +115,10 @@ class NetworkDynamics(object):
     
     
     def __getattr__(self,key):
-        if key == 'updatehisto':
+        if key == 'histoX':
             return self.__updatehisto_nodes
+        if key == 'histoS':
+            return self.__updatehisto_input
         elif key == 'nodes':
             return self.__nodes
         elif key == 'connections':
