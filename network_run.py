@@ -8,7 +8,6 @@ import argparse
 
 import networkclass as nc
 
-
 def Psflip(step, r = .1, K = 5):
     return 0.5*(1.-np.exp(-2.*r*step/K))
 
