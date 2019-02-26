@@ -42,6 +42,7 @@ def main():
     parser.add_argument("-i","--infiles",nargs="*",default=[])
     parser.add_argument("-m","--maxfev",default=1000,type=int)
     parser.add_argument("-M","--maxlen",default=None,type=int)
+    parser.add_argument("-H","--HorizontalOutput",default=False,action="store_true")
     args = parser.parse_args()
     
     for fn in args.infiles:
@@ -74,32 +75,43 @@ def main():
         
         lfit,lcov = curve_fit(lxexp,rsteps,np.log(rdistr),p0=p0,maxfev=args.maxfev)
         
-        
-        print('filename  {}'.format(fn))
-        print('normalfit {:14.6e} {:14.6e}'.format(*fit))
-        print('logfit    {:14.6e} {:14.6e}'.format(*lfit))
-        
-        print('f(x)  = {:.6e} * x**{:.6e} * exp(-{:.6e}*x)'.format(np.power(fit[1],fit[0]+1)/gamma(fit[0]+1),fit[0],fit[1]))
-        print('lf(x) = {:.6e} * x**{:.6e} * exp(-{:.6e}*x)'.format(np.power(lfit[1],lfit[0]+1)/gamma(lfit[0]+1),lfit[0],lfit[1]))
+        if not args.HorizontalOutput:
+            print('filename  {}'.format(fn))
+            print('normalfit {:14.6e} {:14.6e}'.format(*fit))
+            print('logfit    {:14.6e} {:14.6e}'.format(*lfit))
+            
+            print('f(x)  = {:.6e} * x**{:.6e} * exp(-{:.6e}*x)'.format(np.power(fit[1],fit[0]+1)/gamma(fit[0]+1),fit[0],fit[1]))
+            print('lf(x) = {:.6e} * x**{:.6e} * exp(-{:.6e}*x)'.format(np.power(lfit[1],lfit[0]+1)/gamma(lfit[0]+1),lfit[0],lfit[1]))
         
         
         m0 = np.sum(distr)
         m1 = np.dot(steps,distr) / m0
         m2 = np.dot(steps*steps,distr) / m0
         
+        im0 = 1./m0
+        
+        distr_mode = steps[np.argmax(distr)]
+        
+        distr_median = steps[np.argmin([ (0.5 - im0 * np.sum(distr[:i]))**2 for i in range(len(distr))])]
+        
         idx0 = np.argmax(distr == 0)
         if idx0 == 0:
             idx0 = len(distr)
         
-        distr_tail = distr[int(1.5*m1):idx0]
-        steps_tail = steps[int(1.5*m1):idx0]
+        distr_tail = distr[50:idx0]
+        steps_tail = steps[50:idx0]
         
         tfit,tcov = LMSQ(steps_tail,np.log(distr_tail))
         
-        print('mean      {:14.6e}'.format(m1,np.sqrt(m2 - m1**2)))
-        print('variance  {:14.6e}'.format(m2-m1*m1))
-        print('tailslope {:14.6e}'.format(-tfit[1]))
-        print('')
+        if not args.HorizontalOutput:
+            print('mean      {:14.6e}'.format(m1,np.sqrt(m2 - m1**2)))
+            print('variance  {:14.6e}'.format(m2-m1*m1))
+            print('mode      {:14.6e}'.format(distr_mode))
+            print('median    {:14.6e}'.format(distr_median))
+            print('tailslope {:14.6e}'.format(-tfit[1]))
+            print('')
+        else:
+            print('{:14.6e} {:14.6e} {:14.6e} {:14.6e} {:14.6e} {:14.6e} {:14.6e} {:14.6e} {:14.6e}'.format(m1,m2-m1**2,distr_mode,distr_median,-tfit[1],fit[0],fit[1],lfit[0],lfit[1]))
     
 if __name__ == "__main__":
     main()
