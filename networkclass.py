@@ -8,10 +8,10 @@ class NetworkDynamics(object):
 
         self.__intopology           = dict()
         self.__intopology['K']      = kwargs.get('K',5)
-        self.__intopology['type']   = kwargs.get('InTopType','deltaK')
+        self.__intopology['type']   = kwargs.get('InTopologyType','deltaK')
         
         self.__outtopology          = dict()
-        self.__outtopology['type']  = kwargs.get('OutTopType','binomial')
+        self.__outtopology['type']  = kwargs.get('OutTopologyType','binomial')
         
         self.__connections          = dict()
         self.__connections['distr'] = kwargs.get('ConnectionDistr','pm1')
@@ -71,6 +71,8 @@ class NetworkDynamics(object):
             for i in range(self.__size):
                 connections = np.random.choice(self.__size, self.__intopology.get('K',5), replace = False)
                 tmpadj[i][connections] = 1
+        elif self.__intopology['type'] == 'full':
+            tmpadj = np.ones((self.__size,self.__size))
         else:
             raise NotImplementedError
         

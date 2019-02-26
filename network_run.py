@@ -28,6 +28,7 @@ def main():
     parser.add_argument("-K","--K", default = 5, type = int)
     parser.add_argument("-o","--HistoOutfile", default = 'histo.txt', type = str)
     parser.add_argument("-v","--verbose", action = "store_true", default = False)
+    parser.add_argument("-T","--InTopologyType", choices = ['deltaK', 'full'], default = 'deltaK')
     args = parser.parse_args()
 
     histoX = list()
