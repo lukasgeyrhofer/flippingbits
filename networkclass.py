@@ -135,19 +135,22 @@ class NetworkDynamics(object):
 
 # evaluate generating function with SymPy (symbolic python)
 import sympy
+from scipy.special import gamma
+
 
 def genfunc(x,y,z,a0 = 5,b0 = 0):
     return (x * sympy.cosh(z) + y * sympy.sinh(z))**a0 * (x * sympy.sinh(z) + y * sympy.cosh(z))**b0
 
 def ProbGF(t = 0, k = 5, a0 = 0):
+    ifac = np.array([1./gamma(i+1) for i in range(k+1)],dtype = np.float)
     x,y,z = sympy.symbols('x y z')
     expr = genfunc(x,y,z,a0,k - a0)
-    expr = sympy.diff(expr,z,t).subs(z,0)
+    expr = sympy.diff(expr,z,t).subs(z,0.)
     r = np.ones(k+1) / (k ** t)
     for i in range(k+1):
-        tmp = sympy.diff(expr,x,i).subs(x,0)/math.factorial(i)
-        tmp = sympy.diff(tmp,y,k-i).subs(y,0)/math.factorial(k-i)
-        r[i] *= tmp
+        tmp = sympy.diff(expr,x,i).evalf(subs = {x : 0.})
+        tmp = sympy.diff(tmp,y,k-i).evalf(subs = {y : 0.})
+        r[i] *= tmp * ifac[i] * ifac[k-i]
     return r
 
 

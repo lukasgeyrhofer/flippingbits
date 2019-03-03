@@ -9,7 +9,7 @@ import networkclass as nc
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-K","--maxK",type=int,default=31)
-    parser.add_argument("-S","--steps",type=int,default=100)
+    parser.add_argument("-S","--steps",type=int,default=30)
     parser.add_argument("-o","--outbasename",type=str,default="out")
     args = parser.parse_args()
 
