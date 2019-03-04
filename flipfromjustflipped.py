@@ -32,10 +32,6 @@ def main():
                 flipprob[s] = 0
                 break
         
-        print(flipprob)
-        
-        
-        
         for s in steps:
             isflipped[s]  = np.prod(1. - flipprob[:s])
             isflipped[s] *= flipprob[s]
