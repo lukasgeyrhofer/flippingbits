@@ -20,14 +20,19 @@ def Pxflip(step, r = .1, K = 5):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-N","--NetworkSize",default=100,type = int)
-    parser.add_argument("-S","--Steps",default=1000,type=int)
-    parser.add_argument("-n","--reruns", default=20,type=int)
-    parser.add_argument("-r","--UpdateRate", default = .1, type=float)
-    parser.add_argument("-K","--K", default = 5, type = int)
-    parser.add_argument("-o","--HistoOutfile", default = 'histo.txt', type = str)
-    parser.add_argument("-v","--verbose", action = "store_true", default = False)
-    parser.add_argument("-T","--InTopologyType", choices = ['deltaK', 'full'], default = 'deltaK')
+    parser_io = parser.add_argument_group(description = "==== I/O parameters ====")
+    parser_io.add_argument("-o","--HistoOutfile", default = 'histo.txt', type = str)
+    parser_io.add_argument("-v","--verbose", action = "store_true", default = False)
+    
+    parser_net = parser.add_argument_group(description = "==== Network parameters ===="
+    parser_net.add_argument("-N","--NetworkSize",default=100,type = int)
+    parser_net.add_argument("-K","--K", default = 5, type = int)
+    parser_net.add_argument("-T","--InTopologyType", choices = ['deltaK', 'full'], default = 'deltaK')
+    parser_net.add_argument("-r","--UpdateRate", default = .1, type=float)
+    
+    parser_run = parser.add_argument_group(description = "==== Simulation runs ====")
+    parser_run.add_argument("-S","--Steps",default=1000,type=int)
+    parser_run.add_argument("-n","--reruns", default=20,type=int)
     args = parser.parse_args()
 
     histoX = list()
