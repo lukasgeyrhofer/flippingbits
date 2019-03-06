@@ -26,6 +26,9 @@ class NetworkDynamics(object):
         self.__updatehisto_input    = np.array([],dtype=np.int)
         self.__sInputBefore         = np.array(self.__size,dtype=np.float)
         
+        self.__condprobSF_total     = np.array([],dtype=np.float)
+        self.__condprobSF_flip      = np.array([],dtype=np.float)
+        
         self.__verbose              = kwargs.get("verbose",False)
 
         
@@ -47,9 +50,13 @@ class NetworkDynamics(object):
         
         xupdates = self.UpdateXHisto(updateNodesHisto,update)
         supdates = self.UpdateSHisto(updateInputHisto)
+
+        self.UpdateCondProbFlip(updateInputHisto)
         
         self.__lastupdate_input[updateInputHisto] = self.__step
         self.__lastupdate_nodes[updateNodesHisto] = self.__step
+
+
 
         # output
         if self.__verbose:
@@ -116,6 +123,19 @@ class NetworkDynamics(object):
         return countupdates
     
     
+    def UpdateCondProbFlip(self,updateInputHisto):
+        maxtime = np.max(self.__step - self.__lastupdate_input)
+        if maxtime >= len(self.__condprobSF_total):
+            self.__condprobSF_total = np.concatenate([self.__condprobSF_total,np.zeros(1)])
+            self.__condprobSF_flip  = np.concatenate([self.__condprobSF_flip, np.zeros(1)])
+        
+        for i in range(self.__size):
+            if self.__lastupdate_input[i] > 0:
+                self.__condprobSF_total[self.__step - self.__lastupdate_input[i]] += 1
+                if updateInputHisto[i]:
+                    self.__condprobSF_flip[self.__step - self.__lastupdate_input[i]] += 1
+    
+    
     def __getattr__(self,key):
         if key == 'histoX':
             return self.__updatehisto_nodes
@@ -125,6 +145,10 @@ class NetworkDynamics(object):
             return self.__nodes
         elif key == 'connections':
             return self.__connections
+        elif key == 'condprobSF':
+            return self.__condprobSF_flip/self.__condprobSF_total
+        elif key == 'condprobSF_counts':
+            return self.__condprobSF_flip,self.__condprobSF_total
 
 
     def __getitem__(self,key):
@@ -132,6 +156,10 @@ class NetworkDynamics(object):
 
 
 
+
+## ===========================================
+##  analytical and approximative expressions
+## ===========================================
 
 # evaluate generating function with SymPy (symbolic python)
 import sympy
@@ -154,3 +182,12 @@ def ProbGF(t = 0, k = 5, a0 = 0):
     return r
 
 
+# approximations based on mean field analysis using 'Ehrenfest Urn'
+def Psflip(step, r = .1, K = 5):
+    return 0.5*(1.-np.exp(-2.*r*step/K))
+
+def Pxflip(step, r = .1, K = 5):
+    if isinstance(step,(list,tuple,np.ndarray)):
+        return np.array([r * Psflip(s, r ,K) * np.prod([1-r+r*(1-Psflip(i, r, K)) for i in np.arange(1,s)]) for s in step])
+    else:
+        return r * Psflip(step, r ,K) * np.prod([1-r+r*(1-Psflip(i, r, K)) for i in np.arange(1,step)])
