@@ -47,34 +47,38 @@ def main():
     parser.add_argument("-K","--K",type=int,default=5)
     parser.add_argument("-r","--updaterate",type=float,default=.1)
     parser.add_argument("-m","--maxfev",type=int,default=1000)
+    parser.add_argument("-M","--maxsteps",type=int,default=1000)
+    global args
     args = parser.parse_args()
 
-    global args
 
     try:
         data = np.genfromtxt(args.infile)
     except:
         raise IOError("could not load file '{}'".format(args.infile))
     
-    steps = np.array(data[:,0],dtype=int)
-    xflip = data[:,1]
-    sflip = data[:,2]
-    
     global steps,xflip,sflip
+    
+    steps  = np.array(data[:args.maxsteps,0],dtype=int)
+    xflip  = data[:args.maxsteps,1]
+    sflip  = data[:args.maxsteps,2]
+    
+    Psn    = data[:args.maxsteps,3]/data[:args.maxsteps,4]
+    Psn[0] = 0
+    
+    xflipH = Pxf_hallel(Psn,r = args.updaterate)
+    xflipL = Pxf_lukas(Psn,r = args.updaterate)
 
-    xflipH = Pxf_hallel(sflip,r = args.updaterate)
-    xflipL = Pxf_lukas(sflip,r = args.updaterate)
-
-    #for s,sf,xf,xfH,xfL in zip(steps,sflip,xflip,xflipH,xflipL):
-        #print('{:4d} {:14.6e} {:14.6e} {:14.6e} {:14.6e}'.format(s,sf,xf,xfH,xfL))
+    for s,sf,xf,xfH,xfL in zip(steps,sflip,xflip,xflipH,xflipL):
+        print('{:4d} {:14.6e} {:14.6e} {:14.6e} {:14.6e}'.format(s,sf,xf,xfH,xfL))
 
     #fit1,fit2,gnuplotoutput = fitdecay()
     
     #print(gnuplotoutput)
 
-    dsflip = np.diff(sflip)
-    for s in steps[:-1]:
-        print(s,dsflip[s])
+    #dsflip = np.diff(sflip)
+    #for s in steps[:-1]:
+        #print(s,dsflip[s])
 
 
 if __name__ == "__main__":
