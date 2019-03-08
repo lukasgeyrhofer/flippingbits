@@ -23,7 +23,7 @@ class NetworkDynamics(object):
         self.__lastupdate_input     = -np.ones(self.__size,dtype=np.int)
         self.__sInputBefore         = np.array(self.__size,dtype=np.float)
         
-        self.__maxhistolength       = kwargs.get('MaxHistoLength',2000)
+        self.__maxhistolength       = kwargs.get('MaxHistoLength')
         self.__updatehisto_nodes    = np.array([],dtype=np.int)
         self.__updatehisto_input    = np.array([],dtype=np.int)
         self.__condprobSF_total     = np.array([],dtype=np.float)
@@ -100,10 +100,19 @@ class NetworkDynamics(object):
         return 2 * np.random.binomial(self.__intopology['K'],.5,self.__size) - self.__intopology['K']
     
     
+    def CheckMaxHistoLength(self,steps):
+        if self.__maxhistolength is None:
+            return True
+        else:
+            if steps <= self.__maxhistolength:
+                return True
+            else:
+                return False
+    
     def UpdateXHisto(self,updateNodesHisto,update):
         countupdates = 0
         for nodeID in np.arange(self.__size)[updateNodesHisto]:
-            if self.__lastupdate_nodes[nodeID] >= 0 and update[nodeID] and self.__maxhistolength >= self.__step - self.__lastupdate_nodes[nodeID]:
+            if self.__lastupdate_nodes[nodeID] >= 0 and update[nodeID] and self.CheckMaxHistoLength(self.__step - self.__lastupdate_nodes[nodeID]):
                 if len(self.__updatehisto_nodes) <= self.__step - self.__lastupdate_nodes[nodeID]:
                     self.__updatehisto_nodes = np.concatenate([self.__updatehisto_nodes,np.zeros(self.__step - self.__lastupdate_nodes[nodeID] - len(self.__updatehisto_nodes)+1,dtype=np.int)])
         
@@ -115,7 +124,7 @@ class NetworkDynamics(object):
     def UpdateSHisto(self,updateInputHisto):
         countupdates = 0
         for nodeID in np.arange(self.__size)[updateInputHisto]:
-            if self.__lastupdate_input[nodeID] >= 0 and self.__maxhistolength >= self.__step - self.__lastupdate_input[nodeID]:
+            if self.__lastupdate_input[nodeID] >= 0 and self.CheckMaxHistoLength(self.__step - self.__lastupdate_input[nodeID]):
                 if len(self.__updatehisto_input) <= self.__step - self.__lastupdate_input[nodeID]:
                     self.__updatehisto_input = np.concatenate([self.__updatehisto_input,np.zeros(self.__step - self.__lastupdate_input[nodeID] - len(self.__updatehisto_input)+1,dtype=np.int)])
                 
@@ -126,12 +135,14 @@ class NetworkDynamics(object):
     
     def UpdateCondProbFlip(self,updateInputHisto):
         maxtime = np.max(self.__step - self.__lastupdate_input)
-        if maxtime >= len(self.__condprobSF_total) and self.__maxhistolength >= maxtime:
+        if np.any(self.__lastupdate_input == -1):
+            maxtime -= 1
+        if maxtime >= len(self.__condprobSF_total) and self.CheckMaxHistoLength(maxtime):
             self.__condprobSF_total = np.concatenate([self.__condprobSF_total,np.zeros(1)])
             self.__condprobSF_flip  = np.concatenate([self.__condprobSF_flip, np.zeros(1)])
         
         for i in range(self.__size):
-            if self.__lastupdate_input[i] > 0 and self.__maxhistolength > self.__step - self.__lastupdate_input[i]:
+            if self.__lastupdate_input[i] >= 0 and self.CheckMaxHistoLength(self.__step - self.__lastupdate_input[i]):
                 self.__condprobSF_total[self.__step - self.__lastupdate_input[i]] += 1
                 if updateInputHisto[i]:
                     self.__condprobSF_flip[self.__step - self.__lastupdate_input[i]] += 1
