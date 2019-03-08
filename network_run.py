@@ -24,6 +24,7 @@ def main():
     parser_run = parser.add_argument_group(description = "==== Simulation runs ====")
     parser_run.add_argument("-S", "--Steps",          default = 1000,     type = int)
     parser_run.add_argument("-n", "--reruns",         default = 20,       type = int)
+    parser_run.add_argument("-H", "--MaxHistoLength", default = 2000,     type = int)
     args = parser.parse_args()
 
     histoX = list()
