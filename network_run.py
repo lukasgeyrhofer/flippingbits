@@ -30,33 +30,50 @@ def main():
     histoX = list()
     histoS = list()
     
-    condprobSF_flip  = np.array([],dtype=np.float)
-    condprobSF_total = np.array([],dtype=np.float)
+    condprobInput_flip  = np.array([],dtype=np.float)
+    condprobInput_total = np.array([],dtype=np.float)
+    condprobNodes_flip  = np.array([],dtype=np.float)
+    condprobNodes_total = np.array([],dtype=np.float)
     
     for n in range(args.reruns):
         if args.verbose:
             print('simulating network #{}'.format(n))
+        
+        # initialize network from scratch and run simulation
         network = nc.NetworkDynamics(**vars(args))
         network.run(args.Steps)
+        
+        # extract all data from current run
         histoX.append(network.histoX)
         histoS.append(network.histoS)
         
-        cpf,cpt = network.condprobSF_counts
-        if len(condprobSF_flip) < len(cpf):
-            condprobSF_flip  = np.concatenate([condprobSF_flip, np.zeros(len(cpf) - len(condprobSF_flip))])
-            condprobSF_total = np.concatenate([condprobSF_total,np.zeros(len(cpt) - len(condprobSF_total))])
+        cpSf,cpSt = network.condprobInput
+        if len(condprobInput_flip) < len(cpSf):
+            condprobInput_flip  = np.concatenate([condprobInput_flip, np.zeros(len(cpSf) - len(condprobInput_flip))])
+            condprobInput_total = np.concatenate([condprobInput_total,np.zeros(len(cpSt) - len(condprobInput_total))])
+        condprobInput_flip[:len(cpSf)]  += cpSf
+        condprobInput_total[:len(cpSt)] += cpSt
         
-        condprobSF_flip[:len(cpf)]  += cpf
-        condprobSF_total[:len(cpt)] += cpt
+        cpXf,cpXt = network.condprobNodes
+        if len(condprobNodes_flip) < len(cpXf):
+            condprobNodes_flip  = np.concatenate([condprobNodes_flip, np.zeros(len(cpXf) - len(condprobNodes_flip))])
+            condprobNodes_total = np.concatenate([condprobNodes_total,np.zeros(len(cpXt) - len(condprobNodes_total))])
+        condprobNodes_flip[:len(cpXf)]  += cpXf
+        condprobNodes_total[:len(cpXt)] += cpXt
         
-    
-    histolen = np.max([np.max([len(h) for h in histoX]),np.max([len(h) for h in histoS]),len(condprobSF_total)])
+        
+    # bring all measured histograms to the same size to store them in single file
+    histolen = np.max([np.max([len(h) for h in histoX]),np.max([len(h) for h in histoS]),len(condprobInput_total),len(condprobNodes_total)])
     totalhistoX = np.zeros(histolen,dtype = np.int)
     totalhistoS = np.zeros(histolen,dtype = np.int)
     
-    if histolen > len(condprobSF_total):
-        condprobSF_flip  = np.concatenate([condprobSF_flip,np.zeros(histolen - len(condprobSF_flip))])
-        condprobSF_total = np.concatenate([condprobSF_total,np.ones(histolen - len(condprobSF_total))])
+    if histolen > len(condprobInput_total):
+        condprobInput_flip  = np.concatenate([condprobInput_flip,np.zeros(histolen - len(condprobInput_flip))])
+        condprobInput_total = np.concatenate([condprobInput_total,np.ones(histolen - len(condprobInput_total))])
+    
+    if histolen > len(condprobNodes_total):
+        condprobNodes_flip  = np.concatenate([condprobNodes_flip,np.zeros(histolen - len(condprobNodes_flip))])
+        condprobNodes_total = np.concatenate([condprobNodes_total,np.ones(histolen - len(condprobNodes_total))])
     
     for h in histoX:
         totalhistoX[:len(h)] += h
@@ -70,7 +87,7 @@ def main():
     
     if args.verbose:
         print("save histogram recordings to '{}'".format(args.HistoOutfile))
-    np.savetxt(args.HistoOutfile,np.array([bins,totalhistoX * icountX, totalhistoS * icountS, condprobSF_flip, condprobSF_total]).T)
+    np.savetxt(args.HistoOutfile,np.array([bins,totalhistoX * icountX, totalhistoS * icountS, condprobInput_flip, condprobInput_total, condprobNodes_flip, condprobNodes_total]).T)
 
 if __name__ == "__main__":
     main()

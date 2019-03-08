@@ -26,8 +26,10 @@ class NetworkDynamics(object):
         self.__maxhistolength       = kwargs.get('MaxHistoLength')
         self.__updatehisto_nodes    = np.array([],dtype=np.int)
         self.__updatehisto_input    = np.array([],dtype=np.int)
-        self.__condprobSF_total     = np.array([],dtype=np.float)
-        self.__condprobSF_flip      = np.array([],dtype=np.float)
+        self.__condprobInput_total  = np.array([],dtype=np.float)
+        self.__condprobInput_flip   = np.array([],dtype=np.float)
+        self.__condprobNodes_total  = np.array([],dtype=np.float)
+        self.__condprobNodes_flip   = np.array([],dtype=np.float)
         
         self.__step                 = 0
         self.__verbose              = kwargs.get("verbose",False)
@@ -52,7 +54,8 @@ class NetworkDynamics(object):
         xupdates = self.UpdateXHisto(updateNodesHisto,update)
         supdates = self.UpdateSHisto(updateInputHisto)
 
-        self.UpdateCondProbFlip(updateInputHisto)
+        self.UpdateCondProbNodesFlip(updateNodesHisto)
+        self.UpdateCondProbInputFlip(updateInputHisto)
         
         self.__lastupdate_input[updateInputHisto] = self.__step
         self.__lastupdate_nodes[updateNodesHisto] = self.__step
@@ -133,19 +136,35 @@ class NetworkDynamics(object):
         return countupdates
     
     
-    def UpdateCondProbFlip(self,updateInputHisto):
+    def UpdateCondProbInputFlip(self,updateInputHisto):
         maxtime = np.max(self.__step - self.__lastupdate_input)
         if np.any(self.__lastupdate_input == -1):
             maxtime -= 1
-        if maxtime >= len(self.__condprobSF_total) and self.CheckMaxHistoLength(maxtime):
-            self.__condprobSF_total = np.concatenate([self.__condprobSF_total,np.zeros(1)])
-            self.__condprobSF_flip  = np.concatenate([self.__condprobSF_flip, np.zeros(1)])
+        if maxtime >= len(self.__condprobInput_total) and self.CheckMaxHistoLength(maxtime):
+            self.__condprobInput_total = np.concatenate([self.__condprobInput_total,np.zeros(1)])
+            self.__condprobInput_flip  = np.concatenate([self.__condprobInput_flip, np.zeros(1)])
         
         for i in range(self.__size):
             if self.__lastupdate_input[i] >= 0 and self.CheckMaxHistoLength(self.__step - self.__lastupdate_input[i]):
-                self.__condprobSF_total[self.__step - self.__lastupdate_input[i]] += 1
+                self.__condprobInput_total[self.__step - self.__lastupdate_input[i]] += 1
                 if updateInputHisto[i]:
-                    self.__condprobSF_flip[self.__step - self.__lastupdate_input[i]] += 1
+                    self.__condprobInput_flip[self.__step - self.__lastupdate_input[i]] += 1
+
+    
+    def UpdateCondProbNodesFlip(self,updateNodesHisto):
+        maxtime = np.max(self.__step - self.__lastupdate_nodes)
+        if np.any(self.__lastupdate_nodes == - 1):
+            maxtime -= 1
+        if maxtime >= len(self.__condprobNodes_total) and self.CheckMaxHistoLength(maxtime):
+            self.__condprobNodes_total = np.concatenate([self.__condprobNodes_total,np.zeros(1)])
+            self.__condprobNodes_flip  = np.concatenate([self.__condprobNodes_flip, np.zeros(1)])
+        
+        for i in range(self.__size):
+            if self.__lastupdate_nodes[i] >= 0 and self.CheckMaxHistoLength(self.__step - self.__lastupdate_nodes[i]):
+                self.__condprobNodes_total[self.__step - self.__lastupdate_nodes[i]] += 1
+                if updateNodesHisto[i]:
+                    self.__condprobNodes_flip[self.__step - self.__lastupdate_nodes[i]] += 1
+
     
     
     def __getattr__(self,key):
@@ -157,10 +176,10 @@ class NetworkDynamics(object):
             return self.__nodes
         elif key == 'connections':
             return self.__connections
-        elif key == 'condprobSF':
-            return self.__condprobSF_flip/self.__condprobSF_total
-        elif key == 'condprobSF_counts':
-            return self.__condprobSF_flip,self.__condprobSF_total
+        elif key == 'condprobInput':
+            return self.__condprobInput_flip,self.__condprobInput_total
+        elif key == 'condprobNodes':
+            return self.__condprobNodes_flip,self.__condprobNodes_total
 
 
     def __getitem__(self,key):
