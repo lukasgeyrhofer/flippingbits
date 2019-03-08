@@ -54,7 +54,7 @@ class NetworkDynamics(object):
         xupdates = self.UpdateXHisto(updateNodesHisto,update)
         supdates = self.UpdateSHisto(updateInputHisto)
 
-        self.UpdateCondProbNodesFlip(updateNodesHisto)
+        self.UpdateCondProbNodesFlip(updateNodesHisto,update)
         self.UpdateCondProbInputFlip(updateInputHisto)
         
         self.__lastupdate_input[updateInputHisto] = self.__step
@@ -151,7 +151,7 @@ class NetworkDynamics(object):
                     self.__condprobInput_flip[self.__step - self.__lastupdate_input[i]] += 1
 
     
-    def UpdateCondProbNodesFlip(self,updateNodesHisto):
+    def UpdateCondProbNodesFlip(self,updateNodesHisto,update):
         maxtime = np.max(self.__step - self.__lastupdate_nodes)
         if np.any(self.__lastupdate_nodes == - 1):
             maxtime -= 1
@@ -162,7 +162,7 @@ class NetworkDynamics(object):
         for i in range(self.__size):
             if self.__lastupdate_nodes[i] >= 0 and self.CheckMaxHistoLength(self.__step - self.__lastupdate_nodes[i]):
                 self.__condprobNodes_total[self.__step - self.__lastupdate_nodes[i]] += 1
-                if updateNodesHisto[i]:
+                if updateNodesHisto[i] and update[i]:
                     self.__condprobNodes_flip[self.__step - self.__lastupdate_nodes[i]] += 1
 
     
