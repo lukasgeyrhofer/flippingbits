@@ -17,7 +17,8 @@ class NetworkDynamics(object):
         self.__connections['distr'] = kwargs.get('ConnectionDistr','pm1')
         
         self.__nodes                = self.InitializeNodes()
-        self.__connections          = self.GenerateTopology() * self.GenerateConnectionStrength()
+        self.__adjecency            = self.GenerateTopology()
+        self.__connections          = self.__adjecency * self.GenerateConnectionStrength()
         
         self.__lastupdate_nodes     = -np.ones(self.__size,dtype=np.int)
         self.__lastupdate_input     = -np.ones(self.__size,dtype=np.int)
@@ -30,6 +31,8 @@ class NetworkDynamics(object):
         self.__condprobInput_flip   = np.array([],dtype=np.float)
         self.__condprobNodes_total  = np.array([],dtype=np.float)
         self.__condprobNodes_flip   = np.array([],dtype=np.float)
+        
+        self.__countinputflips      = np.array([],dtype=np.int)
         
         self.__step                 = 0
         self.__verbose              = kwargs.get("verbose",False)
@@ -56,6 +59,8 @@ class NetworkDynamics(object):
 
         self.UpdateCondProbNodesFlip(updateNodesHisto,update)
         self.UpdateCondProbInputFlip(updateInputHisto)
+        
+        self.CountInputFlips(updateNodesHisto)
         
         self.__lastupdate_input[updateInputHisto] = self.__step
         self.__lastupdate_nodes[updateNodesHisto] = self.__step
@@ -117,7 +122,7 @@ class NetworkDynamics(object):
         for nodeID in np.arange(self.__size)[updateNodesHisto]:
             if self.__lastupdate_nodes[nodeID] >= 0 and update[nodeID] and self.CheckMaxHistoLength(self.__step - self.__lastupdate_nodes[nodeID]):
                 if len(self.__updatehisto_nodes) <= self.__step - self.__lastupdate_nodes[nodeID]:
-                    self.__updatehisto_nodes = np.concatenate([self.__updatehisto_nodes,np.zeros(self.__step - self.__lastupdate_nodes[nodeID] - len(self.__updatehisto_nodes)+1,dtype=np.int)])
+                    self.__updatehisto_nodes = np.concatenate([self.__updatehisto_nodes,np.zeros(self.__step - self.__lastupdate_nodes[nodeID] - len(self.__updatehisto_nodes) + 1,dtype=np.int)])
         
                 self.__updatehisto_nodes[self.__step - self.__lastupdate_nodes[nodeID]] += 1
                 countupdates += 1
@@ -129,7 +134,7 @@ class NetworkDynamics(object):
         for nodeID in np.arange(self.__size)[updateInputHisto]:
             if self.__lastupdate_input[nodeID] >= 0 and self.CheckMaxHistoLength(self.__step - self.__lastupdate_input[nodeID]):
                 if len(self.__updatehisto_input) <= self.__step - self.__lastupdate_input[nodeID]:
-                    self.__updatehisto_input = np.concatenate([self.__updatehisto_input,np.zeros(self.__step - self.__lastupdate_input[nodeID] - len(self.__updatehisto_input)+1,dtype=np.int)])
+                    self.__updatehisto_input = np.concatenate([self.__updatehisto_input,np.zeros(self.__step - self.__lastupdate_input[nodeID] - len(self.__updatehisto_input) + 1,dtype=np.int)])
                 
                 self.__updatehisto_input[self.__step - self.__lastupdate_input[nodeID]] += 1
                 countupdates += 1
@@ -166,6 +171,15 @@ class NetworkDynamics(object):
                     self.__condprobNodes_flip[self.__step - self.__lastupdate_nodes[i]] += 1
 
     
+    def CountInputFlips(self,updateNodesHisto):
+        nodechanges = np.where(updateNodesHisto,1,0)
+        inputchanges = np.dot(self.__adjecency,nodechanges)
+        if np.max(inputchanges) >= len(self.__countinputflips):
+            self.__countinputflips = np.concatenate([self.__countinputflips,np.zeros(np.max(inputchanges) - len(self.__countinputflips) + 1, dtype = np.int)])
+        for i in range(self.__size):
+            self.__countinputflips[inputchanges[i]] += 1
+        return np.sum(inputchanges)
+    
     
     def __getattr__(self,key):
         if key == 'histoX':
@@ -176,10 +190,14 @@ class NetworkDynamics(object):
             return self.__nodes
         elif key == 'connections':
             return self.__connections
+        elif key == 'adjecency':
+            return self.__adjecency
         elif key == 'condprobInput':
             return self.__condprobInput_flip,self.__condprobInput_total
         elif key == 'condprobNodes':
             return self.__condprobNodes_flip,self.__condprobNodes_total
+        elif key == 'histoinputchange':
+            return self.__countinputflips
 
 
     def __getitem__(self,key):

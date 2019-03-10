@@ -12,19 +12,20 @@ import networkclass as nc
 def main():
     parser = argparse.ArgumentParser()
     parser_io = parser.add_argument_group(description = "==== I/O parameters ====")
-    parser_io.add_argument("-o", "--HistoOutfile",    default = 'histo.txt', type = str)
-    parser_io.add_argument("-v", "--verbose",         default = False,       action = "store_true")
+    parser_io.add_argument("-o", "--HistoOutfile",         default = 'histo.txt', type = str)
+    parser_io.add_argument("-C", "--HistoInputChangeFile", default = None,        type = str)
+    parser_io.add_argument("-v", "--verbose",              default = False,       action = "store_true")
     
     parser_net = parser.add_argument_group(description = "==== Network parameters ====")
-    parser_net.add_argument("-N", "--NetworkSize",    default = 100,      type = int)
-    parser_net.add_argument("-K", "--K",              default = 5,        type = int)
-    parser_net.add_argument("-T", "--InTopologyType", default = 'deltaK', choices = ['deltaK', 'full'])
-    parser_net.add_argument("-r", "--UpdateRate",     default = .1,       type = float)
+    parser_net.add_argument("-N", "--NetworkSize",         default = 100,      type = int)
+    parser_net.add_argument("-K", "--K",                   default = 5,        type = int)
+    parser_net.add_argument("-T", "--InTopologyType",      default = 'deltaK', choices = ['deltaK', 'full'])
+    parser_net.add_argument("-r", "--UpdateRate",          default = .1,       type = float)
     
     parser_run = parser.add_argument_group(description = "==== Simulation runs ====")
-    parser_run.add_argument("-S", "--Steps",          default = 1000,     type = int)
-    parser_run.add_argument("-n", "--reruns",         default = 20,       type = int)
-    parser_run.add_argument("-H", "--MaxHistoLength", default = None,     type = int)
+    parser_run.add_argument("-S", "--Steps",               default = 1000,     type = int)
+    parser_run.add_argument("-n", "--reruns",              default = 20,       type = int)
+    parser_run.add_argument("-H", "--MaxHistoLength",      default = None,     type = int)
     args = parser.parse_args()
 
     histoX = list()
@@ -35,9 +36,10 @@ def main():
     condprobNodes_flip  = np.array([],dtype=np.float)
     condprobNodes_total = np.array([],dtype=np.float)
     
+    histoinputchanges = list()
+    
     for n in range(args.reruns):
-        if args.verbose:
-            print('simulating network #{}'.format(n))
+        if args.verbose: print('simulating network #{}'.format(n))
         
         # initialize network from scratch and run simulation
         network = nc.NetworkDynamics(**vars(args))
@@ -60,6 +62,9 @@ def main():
             condprobNodes_total = np.concatenate([condprobNodes_total,np.zeros(len(cpXt) - len(condprobNodes_total))])
         condprobNodes_flip[:len(cpXf)]  += cpXf
         condprobNodes_total[:len(cpXt)] += cpXt
+        
+        if not args.HistoInputChangeFile is None:
+            histoinputchanges.append(network.histoinputchange)
         
         
     # bring all measured histograms to the same size to store them in single file
@@ -85,9 +90,18 @@ def main():
     
     bins = np.arange(histolen)
     
-    if args.verbose:
-        print("save histogram recordings to '{}'".format(args.HistoOutfile))
+    if args.verbose: print("save histogram recordings to '{}'".format(args.HistoOutfile))
     np.savetxt(args.HistoOutfile,np.array([bins,totalhistoX * icountX, totalhistoS * icountS, condprobInput_flip, condprobInput_total, condprobNodes_flip, condprobNodes_total]).T)
+
+
+    if not args.HistoInputChangeFile is None:
+        l = np.max([len(h) for h in histoinputchanges])
+        totalhistoinput = np.zeros(l,dtype=np.int)
+        for h in histoinputchanges:
+            totalhistoinput[:len(h)] += h
+        if args.verbose: print("save input change histogram to '{}'".format(args.HistoInputChangeFile))
+        np.savetxt(args.HistoInputChangeFile,np.array([np.arange(l),totalhistoinput],dtype=np.int).T,fmt = '%d')
+
 
 if __name__ == "__main__":
     main()
