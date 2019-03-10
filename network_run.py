@@ -17,13 +17,13 @@ def main():
     parser_io.add_argument("-v", "--verbose",              default = False,       action = "store_true")
     
     parser_net = parser.add_argument_group(description = "==== Network parameters ====")
-    parser_net.add_argument("-N", "--NetworkSize",         default = 100,      type = int)
+    parser_net.add_argument("-N", "--NetworkSize",         default = 500,      type = int)
     parser_net.add_argument("-K", "--K",                   default = 5,        type = int)
     parser_net.add_argument("-T", "--InTopologyType",      default = 'deltaK', choices = ['deltaK', 'full'])
     parser_net.add_argument("-r", "--UpdateRate",          default = .1,       type = float)
     
     parser_run = parser.add_argument_group(description = "==== Simulation runs ====")
-    parser_run.add_argument("-S", "--Steps",               default = 1000,     type = int)
+    parser_run.add_argument("-S", "--Steps",               default = 2000,     type = int)
     parser_run.add_argument("-n", "--reruns",              default = 20,       type = int)
     parser_run.add_argument("-H", "--MaxHistoLength",      default = None,     type = int)
     args = parser.parse_args()
