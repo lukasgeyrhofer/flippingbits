@@ -44,6 +44,7 @@ def Pxf_lukas(sflipn,r = 0.1):
 def extractP(p):
     return np.array( [p[i]/(1-np.sum(p[:i])) if np.sum(p[:i]) < 1 else 0 for i in range(len(p))], dtype = np.float)
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i","--infile",type=str)
@@ -84,6 +85,7 @@ def main():
     if args.outfile is None:    fp = sys.stdout
     else:                       fp = open(args.outfile,'w')
     
+    #                       1     2    3     4      5      6      7    8     9     
     np.savetxt(fp,np.array([steps,Pxfn,Pxfgn,xflipH,xflipL,xflipE,Psfn,Psfgn,sflipE],dtype=np.float).T)
     fp.close()
 
