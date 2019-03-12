@@ -42,7 +42,7 @@ def Pxf_lukas(sflipn,r = 0.1):
 
 
 def extractP(p):
-    return np.array( [p[i]/(1-np.sum(p[:i])) for i in range(len(p))], dtype = np.float)
+    return np.array( [p[i]/(1-np.sum(p[:i])) if np.sum(p[:i]) < 1 else 0 for i in range(len(p))], dtype = np.float)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -57,17 +57,23 @@ def main():
 
 
     try:
-        data = np.genfromtxt(args.infile)
+        data = np.genfromtxt(args.infile,dtype=np.float)
     except:
         raise IOError("could not load file '{}'".format(args.infile))
     
-    steps    = np.array(data[:args.maxsteps,0],dtype=int)
-    Pxfn     = data[:args.maxsteps,1]/np.sum(data[:,1])
-    Psfn     = data[:args.maxsteps,2]/np.sum(data[:,2])
-    Psfgn    = data[:args.maxsteps,3]/data[:args.maxsteps,4]
-    Pgfgn    = data[:args.maxsteps,5]/data[:args.maxsteps,6]
-    Pxfgn[0] = 0
-    Psfgn[0] = 0
+    steps     = np.array(data[:args.maxsteps,0],dtype=int)
+    
+    Pxfn      = data[:args.maxsteps,1]/np.sum(data[:,1])
+    tmpa,tmpb = data[:args.maxsteps,5],data[:args.maxsteps,6]
+    Pxfgn     = np.zeros(len(tmpa))
+    Pxfgn[tmpb > 0] = tmpa[tmpb > 0]/tmpb[tmpb > 0]
+    Pxfgn[0]  = 0
+    
+    Psfn      = data[:args.maxsteps,2]/np.sum(data[:,2])
+    tmpa,tmpb = data[:args.maxsteps,3],data[:args.maxsteps,4]
+    Psfgn     = np.zeros(len(tmpa))
+    Psfgn[tmpb > 0] = tmpa[tmpb > 0]/tmpb[tmpb > 0]
+    Psfgn[0]  = 0
     
     xflipH = Pxf_hallel(Pxfgn,r = args.updaterate)
     xflipL = Pxf_lukas(Pxfgn,r = args.updaterate)
