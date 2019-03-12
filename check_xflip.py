@@ -41,9 +41,13 @@ def Pxf_lukas(sflipn,r = 0.1):
     return np.array([r * sflipn[s] * np.prod((1-r) + r * (1-sflipn[:s])) for s in range(len(sflipn))])
 
 
+def extractP(p):
+    return np.array( [p[i]/(1-np.sum(p[:i])) for i in range(len(p))], dtype = np.float)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i","--infile",type=str)
+    parser.add_argument("-o","--outfile",type=str,default=None)
     parser.add_argument("-K","--K",type=int,default=5)
     parser.add_argument("-r","--updaterate",type=float,default=.1)
     parser.add_argument("-m","--maxfev",type=int,default=1000)
@@ -57,28 +61,25 @@ def main():
     except:
         raise IOError("could not load file '{}'".format(args.infile))
     
-    global steps,xflip,sflip
+    steps    = np.array(data[:args.maxsteps,0],dtype=int)
+    Pxfn     = data[:args.maxsteps,1]/np.sum(data[:,1])
+    Psfn     = data[:args.maxsteps,2]/np.sum(data[:,2])
+    Psfgn    = data[:args.maxsteps,3]/data[:args.maxsteps,4]
+    Pgfgn    = data[:args.maxsteps,5]/data[:args.maxsteps,6]
+    Pxfgn[0] = 0
+    Psfgn[0] = 0
     
-    steps  = np.array(data[:args.maxsteps,0],dtype=int)
-    xflip  = data[:args.maxsteps,1]
-    sflip  = data[:args.maxsteps,2]
-    
-    Psn    = data[:args.maxsteps,3]/data[:args.maxsteps,4]
-    Psn[0] = 0
-    
-    xflipH = Pxf_hallel(Psn,r = args.updaterate)
-    xflipL = Pxf_lukas(Psn,r = args.updaterate)
+    xflipH = Pxf_hallel(Pxfgn,r = args.updaterate)
+    xflipL = Pxf_lukas(Pxfgn,r = args.updaterate)
 
-    for s,sf,xf,xfH,xfL in zip(steps,sflip,xflip,xflipH,xflipL):
-        print('{:4d} {:14.6e} {:14.6e} {:14.6e} {:14.6e}'.format(s,sf,xf,xfH,xfL))
+    xflipE = extractP(Pxfn)
+    sflipE = extractP(Psfn)
 
-    #fit1,fit2,gnuplotoutput = fitdecay()
+    if args.outfile is None:    fp = sys.stdout
+    else:                       fp = open(args.outfile,'w')
     
-    #print(gnuplotoutput)
-
-    #dsflip = np.diff(sflip)
-    #for s in steps[:-1]:
-        #print(s,dsflip[s])
+    np.savetxt(fp,np.array([steps,Pxfn,Pxfgn,xflipH,xflipL,xflipE,Pxfn,Psfgn,sflipE],dtype=np.float).T)
+    fp.close()
 
 
 if __name__ == "__main__":
