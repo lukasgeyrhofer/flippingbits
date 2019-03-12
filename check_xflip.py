@@ -75,8 +75,8 @@ def main():
     Psfgn[tmpb > 0] = tmpa[tmpb > 0]/tmpb[tmpb > 0]
     Psfgn[0]  = 0
     
-    xflipH = Pxf_hallel(Pxfgn,r = args.updaterate)
-    xflipL = Pxf_lukas(Pxfgn,r = args.updaterate)
+    xflipH = Pxf_hallel(Psfgn,r = args.updaterate)
+    xflipL = Pxf_lukas(Psfgn,r = args.updaterate)
 
     xflipE = extractP(Pxfn)
     sflipE = extractP(Psfn)
@@ -84,7 +84,7 @@ def main():
     if args.outfile is None:    fp = sys.stdout
     else:                       fp = open(args.outfile,'w')
     
-    np.savetxt(fp,np.array([steps,Pxfn,Pxfgn,xflipH,xflipL,xflipE,Pxfn,Psfgn,sflipE],dtype=np.float).T)
+    np.savetxt(fp,np.array([steps,Pxfn,Pxfgn,xflipH,xflipL,xflipE,Psfn,Psfgn,sflipE],dtype=np.float).T)
     fp.close()
 
 
