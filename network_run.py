@@ -92,7 +92,7 @@ def main():
     
     if args.verbose: print("save histogram recordings to '{}'".format(args.HistoOutfile))
     np.savetxt(args.HistoOutfile,np.array([bins,totalhistoX * icountX, totalhistoS * icountS, condprobInput_flip, condprobInput_total, condprobNodes_flip, condprobNodes_total]).T)
-
+    #                                      1    2                      3                      4                   5                    6                   7
 
     if not args.HistoInputChangeFile is None:
         l = np.max([len(h) for h in histoinputchanges])
