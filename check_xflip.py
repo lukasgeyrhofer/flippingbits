@@ -38,7 +38,7 @@ def Pxf_hallel(sflipn,r = 0.1):
 
 
 def Pxf_lukas(sflipn,r = 0.1):
-    return np.array([r * sflipn[s] * np.prod((1-r) + r * (1-sflipn[:s])) for s in range(len(sflipn))])
+    return np.array([r * sflipn[s] * np.prod(1 - r * sflipn[:s]) for s in range(len(sflipn))])
 
 
 def extractP(p):
@@ -79,14 +79,17 @@ def main():
     xflipH = Pxf_hallel(Psfgn,r = args.updaterate)
     xflipL = Pxf_lukas(Psfgn,r = args.updaterate)
 
+    xflipHH = Pxf_hallel(Psfn,r = args.updaterate)
+    xflipLL = Pxf_lukas(Psfn,r = args.updaterate)
+
     xflipE = extractP(Pxfn)
     sflipE = extractP(Psfn)
 
     if args.outfile is None:    fp = sys.stdout
     else:                       fp = open(args.outfile,'w')
     
-    #                       1     2    3     4      5      6      7    8     9     
-    np.savetxt(fp,np.array([steps,Pxfn,Pxfgn,xflipH,xflipL,xflipE,Psfn,Psfgn,sflipE],dtype=np.float).T)
+    #                       1     2    3     4      5      6       7       8      9    10    11
+    np.savetxt(fp,np.array([steps,Pxfn,Pxfgn,xflipH,xflipL,xflipHH,xflipLL,xflipE,Psfn,Psfgn,sflipE],dtype=np.float).T)
     fp.close()
 
 
