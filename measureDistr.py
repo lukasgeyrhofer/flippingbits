@@ -55,7 +55,7 @@ def main():
         fit,cov = LMSQ(n,np.log(Pxfgn))
         
         
-        print('{:2d} {:.2f} {:14.6e} {:14.6e}'.format(k,r,*fit))
+        print('{:02d} {:.2f} {:14.6e} {:14.6e}'.format(k,r,np.exp(fit[0]),fit[1]))
         
         
         
