@@ -40,22 +40,33 @@ def main():
         r = float(fn[13:])
         k = int(fn[7:11])
         
-        n     = data[:,0] * r
-        Pxfgn = data[:,2]
-        
-        Pxfgn = Pxfgn[n >= args.minrange]
-        n = n[n >= args.minrange]
-        
-        Pxfgn = Pxfgn[n <= args.maxrange]
-        n = n[n <= args.maxrange]
-        
-        n = n[Pxfgn > 0]
-        Pxfgn = Pxfgn[Pxfgn > 0]
-        
-        fit,cov = LMSQ(n,np.log(Pxfgn))
+        n        = data[:,0] * r
+        Pxfgn    = data[:,2]
         
         
-        print('{:02d} {:.2f} {:14.6e} {:14.6e}'.format(k,r,np.exp(fit[0]),fit[1]))
+        # fit tail to
+        # log P[xf|n] ~ A + B n
+        Pxfgn    = Pxfgn[n <= args.maxrange]
+        n        = n[n <= args.maxrange]
+        
+        n        = n[Pxfgn > 0]
+        Pxfgn    = Pxfgn[Pxfgn > 0]
+
+        PxfgnMIN = Pxfgn[n >= args.minrange]
+        nMIN     = n[n >= args.minrange]
+        
+        fit,cov  = LMSQ(nMIN,np.log(PxfgnMIN))
+        
+        # substract fit for tail to compute approach to this
+        # asymptotic solution, assume exponential approach
+        p = np.exp(fit[0] + fit[1] * n) - Pxfgn
+        
+        p = p[n<=1]
+        n = n[n<=1]
+        
+        fit2,cov2 = LMSQ(n,np.log(p))
+        
+        print('{:02d} {:.2f} {:14.6e} {:14.6e} {:14.6e} {:14.6e}'.format(k,r,np.exp(fit[0]),fit[1],fit2[0],fit2[1]))
         
         
         
