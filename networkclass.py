@@ -13,9 +13,10 @@ class NetworkDynamics(object):
         self.__outtopology          = dict()
         self.__outtopology['type']  = kwargs.get('OutTopologyType','binomial')
         
-        self.__connections          = dict()
-        self.__connections['distr'] = kwargs.get('ConnectionDistr','pm1')
+        self.__weights              = dict()
+        self.__weights['distr']     = kwargs.get('ConnectionDistr','pm1')
         
+        self.__adjecencylist        = list()
         self.__nodes                = self.InitializeNodes()
         self.__adjecency            = self.GenerateTopology()
         self.__connections          = self.__adjecency * self.GenerateConnectionStrength()
@@ -31,6 +32,9 @@ class NetworkDynamics(object):
         self.__condprobInput_flip   = np.array([],dtype=np.float)
         self.__condprobNodes_total  = np.array([],dtype=np.float)
         self.__condprobNodes_flip   = np.array([],dtype=np.float)
+        
+        self.__histoatflip_nodes    = np.array([],dtype=np.int)
+        self.__histoatflip_input    = np.array([],dtype=np.int)
         
         self.__countinputflips      = np.array([],dtype=np.int)
         
@@ -57,15 +61,20 @@ class NetworkDynamics(object):
         xupdates = self.UpdateXHisto(updateNodesHisto,update)
         supdates = self.UpdateSHisto(updateInputHisto)
 
+        # conditioned on how many steps passed since last flip
         self.UpdateCondProbNodesFlip(updateNodesHisto,update)
         self.UpdateCondProbInputFlip(updateInputHisto)
         
+        # count how many flipped nodes occur in one input
         self.CountInputFlips(updateNodesHisto)
         
+        # conditioned on a flip (in input or nodes), at what (earlier) times did either nodes (connecting to input) or input (of the current node) flip
+        self.HistoAtFlipInput(updateInputHisto)
+        self.HistoAtFlipNodes(updateNodesHisto)
+        
+        # set timestep of last update for changed inputs and nodes to current step
         self.__lastupdate_input[updateInputHisto] = self.__step
         self.__lastupdate_nodes[updateNodesHisto] = self.__step
-
-
 
         # output
         if self.__verbose:
@@ -86,6 +95,7 @@ class NetworkDynamics(object):
         if self.__intopology['type'] == 'deltaK' and self.__outtopology['type'] == 'binomial':
             for i in range(self.__size):
                 connections = np.random.choice(self.__size, self.__intopology.get('K',5), replace = False)
+                self.__adjecencylist.append(connections)
                 tmpadj[i][connections] = 1
         elif self.__intopology['type'] == 'full':
             tmpadj = np.ones((self.__size,self.__size))
@@ -97,7 +107,7 @@ class NetworkDynamics(object):
     
     def GenerateConnectionStrength(self):
         tmpcs = np.zeros((self.__size,self.__size),dtype=np.float)
-        if self.__connections['distr'] == 'pm1':
+        if self.__weights['distr'] == 'pm1':
             tmpcs = np.random.choice([-1,1],size = (self.__size,self.__size))
         else:
             raise NotImplementedError
@@ -181,6 +191,24 @@ class NetworkDynamics(object):
         return np.sum(inputchanges)
     
     
+    def HistoAtFlipInput(self,updateInputHisto):
+        for nodeID in np.arange(self.__size)[updateInputHisto]:
+            tmp_lastupdate = self.__step - self.__lastupdate_nodes[self.__adjecencylist[nodeID]]
+            if np.max(tmp_lastupdate) >= len(self.__histoatflip_input):
+                self.__histoatflip_input = np.concatenate([self.__histoatflip_input,np.zeros(np.max(tmp_lastupdate) - len(self.__histoatflip_input) + 1,dtype=np.int)])
+            for i in tmp_lastupdate:
+                self.__histoatflip_input[i] += 1
+    
+    
+    def HistoAtFlipNodes(self,updateNodesHisto):
+        for nodeID in np.arange(self.__size)[updateNodesHisto]:
+            inputupdate = self.__step - self.__lastupdate_input[nodeID]
+            if inputupdate >= len(self.__histoatflip_nodes):
+                self.__histoatflip_nodes = np.concatenate([self.__histoatflip_nodes,np.zeros(inputupdate - len(self.__histoatflip_nodes) + 1, dtype=np.int)])
+            self.__histoatflip_nodes[inputupdate] += 1
+            
+    
+    
     def __getattr__(self,key):
         if key == 'histoX':
             return self.__updatehisto_nodes
@@ -198,6 +226,10 @@ class NetworkDynamics(object):
             return self.__condprobNodes_flip,self.__condprobNodes_total
         elif key == 'histoinputchange':
             return self.__countinputflips
+        elif key == 'histoatflipnodes':
+            return self.__histoatflip_nodes
+        elif key == 'histoatflipinput':
+            return self.__histoatflip_input
 
 
     def __getitem__(self,key):

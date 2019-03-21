@@ -35,6 +35,8 @@ def main():
     condprobInput_total = np.array([],dtype=np.float)
     condprobNodes_flip  = np.array([],dtype=np.float)
     condprobNodes_total = np.array([],dtype=np.float)
+    histoatflipNodes    = np.array([],dtype=np.float)
+    histoatflipInput    = np.array([],dtype=np.float)
     
     histoinputchanges = list()
     
@@ -63,12 +65,22 @@ def main():
         condprobNodes_flip[:len(cpXf)]  += cpXf
         condprobNodes_total[:len(cpXt)] += cpXt
         
+        hafX = network.histoatflipnodes
+        if len(histoatflipNodes) < len(hafX):
+            histoatflipNodes = np.concatenate([histoatflipNodes,np.zeros(len(hafX) - len(histoatflipNodes))])
+        histoatflipNodes[:len(hafX)] += hafX
+        
+        hafS = network.histoatflipinput
+        if len(histoatflipInput) < len(hafS):
+            histoatflipInput = np.concatenate([histoatflipInput,np.zeros(len(hafS) - len(histoatflipInput))])
+        histoatflipInput[:len(hafS)] += hafS
+        
         if not args.HistoInputChangeFile is None:
             histoinputchanges.append(network.histoinputchange)
         
         
     # bring all measured histograms to the same size to store them in single file
-    histolen = np.max([np.max([len(h) for h in histoX]),np.max([len(h) for h in histoS]),len(condprobInput_total),len(condprobNodes_total)])
+    histolen = np.max([np.max([len(h) for h in histoX]),np.max([len(h) for h in histoS]),len(condprobInput_total),len(condprobNodes_total),len(histoatflipInput),len(histoatflipNodes)])
     totalhistoX = np.zeros(histolen,dtype = np.int)
     totalhistoS = np.zeros(histolen,dtype = np.int)
     
@@ -79,6 +91,12 @@ def main():
     if histolen > len(condprobNodes_total):
         condprobNodes_flip  = np.concatenate([condprobNodes_flip,np.zeros(histolen - len(condprobNodes_flip))])
         condprobNodes_total = np.concatenate([condprobNodes_total,np.ones(histolen - len(condprobNodes_total))])
+    
+    if histolen > len(histoatflipInput):
+        histoatflipInput    = np.concatenate([histoatflipInput,np.zeros(histolen - len(histoatflipInput))])
+    
+    if histolen > len(histoatflipNodes):
+        histoatflipNodes    = np.concatenate([histoatflipNodes,np.zeros(histolen - len(histoatflipNodes))])
     
     for h in histoX:
         totalhistoX[:len(h)] += h
@@ -91,8 +109,8 @@ def main():
     bins = np.arange(histolen)
     
     if args.verbose: print("save histogram recordings to '{}'".format(args.HistoOutfile))
-    np.savetxt(args.HistoOutfile,np.array([bins,totalhistoX * icountX, totalhistoS * icountS, condprobInput_flip, condprobInput_total, condprobNodes_flip, condprobNodes_total]).T)
-    #                                      1    2                      3                      4                   5                    6                   7
+    np.savetxt(args.HistoOutfile,np.array([bins,totalhistoX * icountX, totalhistoS * icountS, condprobInput_flip, condprobInput_total, condprobNodes_flip, condprobNodes_total, histoatflipInput, histoatflipNodes]).T)
+    # column:                              1    2                      3                      4                   5                    6                   7                    9                 10
 
     if not args.HistoInputChangeFile is None:
         l = np.max([len(h) for h in histoinputchanges])
