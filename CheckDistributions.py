@@ -92,10 +92,10 @@ def main():
         FxfzCOMP  = dict()
         fPxfnCOMP = dict()
         for order in np.arange(start = 0, stop = args.maxorderFFT + 1e-2, step = 2, dtype = np.int):
-            FxfzCOMP[order]  = FxfzCOMP0 * np.sum([np.power(Fsfz,2*a) for a in range(order/2)])
+            FxfzCOMP[order]  = FxfzCOMP0 * np.sum([np.power(Fsfz,2*a) for a in range(order/2)], axis = 0)
             fPxfnCOMP[order] = np.real(np.fft.ifft(FxfzCOMP[order]))
             
-            output           = np.concatenate([output,    np.array( [np.real(fPxfnCOMP[order])] ).T], axis = 1)
+            output           = np.concatenate([output,    np.array( [np.real(fPxfnCOMP[order]), np.imag(fPxfnCOMP[order])] ).T], axis = 1)
             fftoutput        = np.concatenate([fftoutput, np.array( [np.real(FxfzCOMP[order]), np.imag(FxfzCOMP[order])] ).T], axis = 1)
 
 
