@@ -21,6 +21,7 @@ def main():
     parser.add_argument("-F", "--fftoutfiles",   default = "CDfft",      type = str)
     parser.add_argument("-m", "--maxtime",       default = None,         type = int)
     parser.add_argument("-v", "--verbose",       default = False,        action = "store_true")
+    parser.add_argument("-f", "--fourthorder",   default = False,        action = "store_true")
     args = parser.parse_args()
 
     for fn in args.infiles:
@@ -49,12 +50,13 @@ def main():
                     PxfnCOMP2[m] += Psfngxf[m] * Psfn[k] * Psfn[l] * Pxfngsf[maxtime-m-k-l-1]
         
         PxfnCOMP4 = np.copy(PxfnCOMP2)
-        for m in range(maxtime):
-            for k in range(maxtime-m):
-                for l in range(maxtime-m-k):
-                    for i in range(maxtime-m-k-l):
-                        for j in range(maxtime-m-k-l-i):
-                            PxfnCOMP4[m] += Psfngxf[m] * Psfn[k] * Psfn[l] * Psfn[i] * Psfn[j] * Pxfngsf[maxtime-m-k-l-i-j-1]
+        if args.fourthorder:
+            for m in range(maxtime):
+                for k in range(maxtime-m):
+                    for l in range(maxtime-m-k):
+                        for i in range(maxtime-m-k-l):
+                            for j in range(maxtime-m-k-l-i):
+                                PxfnCOMP4[m] += Psfngxf[m] * Psfn[k] * Psfn[l] * Psfn[i] * Psfn[j] * Pxfngsf[maxtime-m-k-l-i-j-1]
         
         Fxfz    = np.fft.fft(Pxfn)
         Fsfz    = np.fft.fft(Psfn)
@@ -82,7 +84,7 @@ def main():
         
         
         fftoutfile = args.fftoutfiles + '_' + basename(fn)
-        z = np.fft.fftfreq(n)
+        z = np.fft.fftfreq(maxtime)
         np.savetxt(fftoutfile,np.array([z,Fxfz,Fsfz,FxfzCOMP0,FxfzCOMP2,FxfzCOMP4]).T)
         
         
