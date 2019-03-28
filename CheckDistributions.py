@@ -30,10 +30,9 @@ def main():
         except:             continue
         
         n       = data[:,0]
-        if not args.maxtime is None:
-            maxtime = args.maxtime
-        else:
-            maxtime = len(n)
+        if not args.maxtime is None:    maxtime = np.min([args.maxtime,len(n)])
+        else:                           maxtime = len(n)
+            
         n       = n[:maxtime]
         Pxfn    = data[:maxtime,1] # P[xf,n]
         Psfn    = data[:maxtime,2] # P[sf,n]
@@ -80,13 +79,13 @@ def main():
         fPsfnAT = np.fft.ifft(FsfzAT)
         
         outfilename = args.outfileprefix + '_' + basename(fn) 
-        np.savetxt(outfilename, np.array([n, Pxfn, Psfn, Pxfgn, Psfgn, Pxfngsf, Psfngxf, FxfzCOMP0, FxfzCOMP2, FxfzCOMP4, fPxfn0, fPxfn2, fPxfn4, fPxfnAT, fPsfnAT]).T)
-        
+        np.savetxt(outfilename, np.array([n, Pxfn, Psfn, Pxfgn, Psfgn, Pxfngsf, Psfngxf, fPxfn0, fPxfn2, fPxfn4, PxfnCOMP0, PxfnCOMP2, PxfnCOMP4, fPxfnAT, fPsfnAT], dtype = np.float).T)
+        #                                 1  2     3     4      5      6        7        8       9       10      11         12         13         14       15
         
         fftoutfile = args.fftoutfiles + '_' + basename(fn)
-        z = np.fft.fftfreq(maxtime)
-        np.savetxt(fftoutfile,np.array([z,Fxfz,Fsfz,FxfzCOMP0,FxfzCOMP2,FxfzCOMP4]).T)
-        
+        z = np.real(np.fft.fftfreq(maxtime))
+        np.savetxt(fftoutfile,np.array([z, np.real(Fxfz), np.imag(Fxfz), np.real(Fsfz), np.imag(Fsfz), np.real(FxfzCOMP0), np.imag(FxfzCOMP0), np.real(FxfzCOMP2), np.imag(FxfzCOMP2), np.real(FxfzCOMP4), np.imag(FxfzCOMP4)]).T)
+        #                               1  2              3              4              5              6                   7                   8                   9                   10                  11
         
                                           
 if __name__ == "__main__":                   
