@@ -49,6 +49,7 @@ def main():
                         for i in range(maxtime-m-k-l):
                             PxfnCOMP2[m] += Psfngxf[k] * Psfn[l] * Psfn[i] * Pxfngsf[m-k-l-i-1]
         
+        
         PxfnCOMP4 = np.copy(PxfnCOMP2)
         if args.DirectConvolution:
             for m in range(maxtime):
