@@ -33,8 +33,8 @@ class NetworkDynamics(object):
         self.__condprobNodes_total  = np.array([],dtype=np.float)
         self.__condprobNodes_flip   = np.array([],dtype=np.float)
         
-        self.__histoatflip_nodes    = np.array([],dtype=np.int)
-        self.__histoatflip_input    = np.array([],dtype=np.int)
+        self.__histoXFafterSF       = np.array([],dtype=np.int)
+        self.__histoSFafterXF       = np.array([],dtype=np.int)
         
         self.__countinputflips      = np.array([],dtype=np.int)
         
@@ -69,8 +69,8 @@ class NetworkDynamics(object):
         self.CountInputFlips(updateNodesHisto)
         
         # conditioned on a flip (in input or nodes), at what (earlier) times did either nodes (connecting to input) or input (of the current node) flip
-        self.HistoAtFlipInput(updateInputHisto)
-        self.HistoAtFlipNodes(updateNodesHisto)
+        self.HistoNodesChangeAfterInputFlip(updateNodesHisto,updateInputHisto)
+        self.HistoInputChangeAfterNodesFlip(updateNodesHisto,updateInputHisto)
         
         # set timestep of last update for changed inputs and nodes to current step
         self.__lastupdate_input[updateInputHisto] = self.__step
@@ -118,101 +118,128 @@ class NetworkDynamics(object):
         return 2 * np.random.binomial(self.__intopology['K'],.5,self.__size) - self.__intopology['K']
     
     
-    def CheckMaxHistoLength(self,steps):
+    def AddMaxHistoLength(self,steps):
         if self.__maxhistolength is None:
+            # no maximal length defined, thus extend histograms indefintely
             return True
         else:
             if steps <= self.__maxhistolength:
+                # max length not yet reached
                 return True
             else:
+                # max length reached, do not add additional bins to histograms
                 return False
     
+    
+    def UpdateHistogram(self,histo,step):
+        """
+        general method to compute histograms
+        includes 2 checks:
+            * max length should not be exceeded
+            * if the current length of the histogram is extended, more bins are needed
+        """
+        update = False
+        if self.__maxhistolength is None:
+            update = True
+        else:
+            if step <= self.__maxhistolength:
+                update is True
+        if update:
+            if len(histo) <= step:
+                histo = np.concatenate([histo,np.zeros(step - len(histo) + 1)])
+            histo[step] += 1
+        return histo
+    
+    
     def UpdateXHisto(self,updateNodesHisto,update):
+        """
+        compute P[xf,n]
+        """
         countupdates = 0
         for nodeID in np.arange(self.__size)[updateNodesHisto]:
-            if self.__lastupdate_nodes[nodeID] >= 0 and update[nodeID] and self.CheckMaxHistoLength(self.__step - self.__lastupdate_nodes[nodeID]):
-                if len(self.__updatehisto_nodes) <= self.__step - self.__lastupdate_nodes[nodeID]:
-                    self.__updatehisto_nodes = np.concatenate([self.__updatehisto_nodes,np.zeros(self.__step - self.__lastupdate_nodes[nodeID] - len(self.__updatehisto_nodes) + 1,dtype=np.int)])
-        
-                self.__updatehisto_nodes[self.__step - self.__lastupdate_nodes[nodeID]] += 1
+            StepsSinceUpdate = self.__step - self.__lastupdate_nodes[nodeID]
+            
+            if self.__lastupdate_nodes[nodeID] >= 0 and update[nodeID]:
+                self.__updatehisto_nodes = self.UpdateHistogram(self.__updatehisto_nodes, StepsSinceUpdate)
                 countupdates += 1
+        
         return countupdates
     
     
     def UpdateSHisto(self,updateInputHisto):
+        """
+        compute P[sf,n]
+        """
         countupdates = 0
         for nodeID in np.arange(self.__size)[updateInputHisto]:
-            if self.__lastupdate_input[nodeID] >= 0 and self.CheckMaxHistoLength(self.__step - self.__lastupdate_input[nodeID]):
-                if len(self.__updatehisto_input) <= self.__step - self.__lastupdate_input[nodeID]:
-                    self.__updatehisto_input = np.concatenate([self.__updatehisto_input,np.zeros(self.__step - self.__lastupdate_input[nodeID] - len(self.__updatehisto_input) + 1,dtype=np.int)])
-                
-                self.__updatehisto_input[self.__step - self.__lastupdate_input[nodeID]] += 1
+            StepsSinceUpdate = self.__step - self.__lastupdate_input[nodeID]
+            if self.__lastupdate_input[nodeID] >= 0:
+                self.__updatehisto_input = self.UpdateHistogram(self.__updatehisto_input, StepsSinceUpdate)
                 countupdates += 1
         return countupdates
     
     
     def UpdateCondProbInputFlip(self,updateInputHisto):
-        maxtime = np.max(self.__step - self.__lastupdate_input)
-        if np.any(self.__lastupdate_input == -1):
-            maxtime -= 1
-        if maxtime >= len(self.__condprobInput_total) and self.CheckMaxHistoLength(maxtime):
-            self.__condprobInput_total = np.concatenate([self.__condprobInput_total,np.zeros(1)])
-            self.__condprobInput_flip  = np.concatenate([self.__condprobInput_flip, np.zeros(1)])
-        
-        for i in range(self.__size):
-            if self.__lastupdate_input[i] >= 0 and self.CheckMaxHistoLength(self.__step - self.__lastupdate_input[i]):
-                self.__condprobInput_total[self.__step - self.__lastupdate_input[i]] += 1
-                if updateInputHisto[i]:
-                    self.__condprobInput_flip[self.__step - self.__lastupdate_input[i]] += 1
+        """
+        compute P[sf|n] by counting sf and n
+        """
+        for nodeID in range(self.__size):
+            StepsSinceUpdate = self.__step - self.__lastupdate_input[nodeID]
+            if self.__lastupdate_input[nodeID] >= 0:
+                self.__condprobInput_total = self.UpdateHistogram(self.__condprobInput_total,StepsSinceUpdate)
+                if updateInputHisto[nodeID]:
+                    self.__condprobInput_flip = self.UpdateHistogram(self.__condprobInput_flip, StepsSinceUpdate)
 
     
     def UpdateCondProbNodesFlip(self,updateNodesHisto,update):
-        maxtime = np.max(self.__step - self.__lastupdate_nodes)
-        if np.any(self.__lastupdate_nodes == - 1):
-            maxtime -= 1
-        if maxtime >= len(self.__condprobNodes_total) and self.CheckMaxHistoLength(maxtime):
-            self.__condprobNodes_total = np.concatenate([self.__condprobNodes_total,np.zeros(1)])
-            self.__condprobNodes_flip  = np.concatenate([self.__condprobNodes_flip, np.zeros(1)])
-        
-        for i in range(self.__size):
-            if self.__lastupdate_nodes[i] >= 0 and self.CheckMaxHistoLength(self.__step - self.__lastupdate_nodes[i]):
-                self.__condprobNodes_total[self.__step - self.__lastupdate_nodes[i]] += 1
-                if updateNodesHisto[i] and update[i]:
-                    self.__condprobNodes_flip[self.__step - self.__lastupdate_nodes[i]] += 1
+        """
+        compute P[xf|n] by counting xf and n
+        """
+        for nodeID in range(self.__size):
+            StepsSinceUpdate = self.__step - self.__lastupdate_nodes[nodeID]
+            if self.__lastupdate_nodes[nodeID] >= 0:
+                self.__condprobNodes_total = self.UpdateHistogram(self.__condprobNodes_total, StepsSinceUpdate)
+                if updateNodesHisto[nodeID] and update[nodeID]:
+                    self.__condprobNodes_flip = self.UpdateHistogram(self.__condprobNodes_flip, StepsSinceUpdate)
 
     
     def CountInputFlips(self,updateNodesHisto):
-        nodechanges = np.where(updateNodesHisto,1,0)
-        inputchanges = np.dot(self.__adjecency,nodechanges)
-        if np.max(inputchanges) >= len(self.__countinputflips):
-            self.__countinputflips = np.concatenate([self.__countinputflips,np.zeros(np.max(inputchanges) - len(self.__countinputflips) + 1, dtype = np.int)])
-        for i in range(self.__size):
-            self.__countinputflips[inputchanges[i]] += 1
+        """
+        compute how many nodes of a single input are flipped this step
+        """
+        nodechanges  = np.where(updateNodesHisto, 1, 0)
+        inputchanges = np.dot(self.__adjecency, nodechanges)
+        for nodeID in range(self.__size):
+            self.__countinputflips = self.UpdateHistogram(self.__countinputflips, inputchanges[nodeID])
         return np.sum(inputchanges)
     
     
-    def HistoAtFlipInput(self,updateInputHisto):
-        for nodeID in np.arange(self.__size)[updateInputHisto]:
-            tmp_lastupdate = self.__step - self.__lastupdate_nodes[self.__adjecencylist[nodeID]]
-            if np.max(tmp_lastupdate) >= len(self.__histoatflip_input):
-                self.__histoatflip_input = np.concatenate([self.__histoatflip_input,np.zeros(np.max(tmp_lastupdate) - len(self.__histoatflip_input) + 1,dtype=np.int)])
-            for i in tmp_lastupdate:
-                self.__histoatflip_input[i] += 1
-    
-    
-    def HistoAtFlipNodes(self,updateNodesHisto):
+    def HistoNodesChangeAfterInputFlip(self, updateNodesHisto, updateInputHisto):
+        """
+        compute P[xf,n|sf]
+        """
         for nodeID in np.arange(self.__size)[updateNodesHisto]:
-            inputupdate = self.__step - self.__lastupdate_input[nodeID]
-            if inputupdate >= len(self.__histoatflip_nodes):
-                self.__histoatflip_nodes = np.concatenate([self.__histoatflip_nodes,np.zeros(inputupdate - len(self.__histoatflip_nodes) + 1, dtype=np.int)])
-            self.__histoatflip_nodes[inputupdate] += 1
+            StepsSinceUpdate = self.__step - self.__lastupdate_input[nodeID]
+            if updateInputHisto[nodeID]: StepsSinceUpdate = 0
+            self.__histoXFafterSF = self.UpdateHistogram(self.__histoXFafterSF, StepsSinceUpdate)
+    
+    
+    def HistoInputChangeAfterNodesFlip(self, updateNodesHisto, updateInputHisto):
+        """
+        compute P[sf,n|xf]
+        """
+        for nodeID in np.arange(self.__size)[updateInputHisto]:
+            for connected_nodeID in self.__adjecencylist[nodeID]:
+                StepsSinceUpdate = self.__step - self.__lastupdate_nodes[connected_nodeID]
+                if updateNodesHisto[connected_nodeID]: StepsSinceUpdate = 0
+                self.__histoSFafterXF = self.UpdateHistogram(self.__histoSFafterXF, StepsSinceUpdate)
             
     
     
     def __getattr__(self,key):
-        if key == 'histoX':
+        if   key == 'histoX':
             return self.__updatehisto_nodes
-        if key == 'histoS':
+        elif key == 'histoS':
             return self.__updatehisto_input
         elif key == 'nodes':
             return self.__nodes
@@ -227,9 +254,9 @@ class NetworkDynamics(object):
         elif key == 'histoinputchange':
             return self.__countinputflips
         elif key == 'histoatflipnodes':
-            return self.__histoatflip_nodes
+            return self.__histoXFafterSF
         elif key == 'histoatflipinput':
-            return self.__histoatflip_input
+            return self.__histoSFafterXF
 
 
     def __getitem__(self,key):

@@ -81,8 +81,8 @@ def main():
         
     # bring all measured histograms to the same size to store them in single file
     histolen = np.max([np.max([len(h) for h in histoX]),np.max([len(h) for h in histoS]),len(condprobInput_total),len(condprobNodes_total),len(histoatflipInput),len(histoatflipNodes)])
-    totalhistoX = np.zeros(histolen,dtype = np.int)
-    totalhistoS = np.zeros(histolen,dtype = np.int)
+    totalhistoX = np.zeros(histolen,dtype = np.float)
+    totalhistoS = np.zeros(histolen,dtype = np.float)
     
     if histolen > len(condprobInput_total):
         condprobInput_flip  = np.concatenate([condprobInput_flip,np.zeros(histolen - len(condprobInput_flip))])
