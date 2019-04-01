@@ -13,6 +13,7 @@ def main():
     parser.add_argument("-v", "--verbose",          default = False,  action = "store_true")
     parser.add_argument("-O", "--OverwriteInPlace", default = False,  action = "store_true")
     parser.add_argument("-C", "--Cumulative",       default = False,  action = "store_true")
+    parser.add_argument("-R", "--Remaining",        default = False,  action = "store_true")
     args = parser.parse_args()
 
     for fn in args.infiles:
@@ -51,7 +52,17 @@ def main():
             columnheaders.append('P[xf,<n]')
             columnheaders.append('P[sf,<n]')
             
-            
+        if args.Remaining:
+            RXn            = np.array([np.sum(Pxfn[m:]) for m in range(len(n))])
+            RSn            = np.array([np.sum(Psfn[m:]) for m in range(len(n))])
+            RXn           /= np.sum(RXn)
+            RSn           /= np.sum(RSn)
+            output         = np.concatenate([output,np.array([RXn,RSn]).T], axis = 1)
+        
+            columnheaders.append('P[xf,>n]')
+            columnheaders.append('P[sf,>n]')
+        
+        
         if args.OverwriteInPlace:   outfilename = fn
         else:                       outfilename = args.outfileprefix + '_' + os.path.basename(fn)
         
