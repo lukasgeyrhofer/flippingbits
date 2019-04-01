@@ -44,8 +44,8 @@ def main():
             
         
         if args.Cumulative:
-            Cxfn           = np.array([np.sum(Pxf[:m]) for m in range(len(n))])
-            Csfn           = np.array([np.sum(Psf[:m]) for m in range(len(n))])
+            Cxfn           = np.array([np.sum(Pxfn[:m]) for m in range(len(n))])
+            Csfn           = np.array([np.sum(Psfn[:m]) for m in range(len(n))])
             output         = np.concatenate([output, np.array([Cxfn,Csfn], dtype = np.float).T], axis = 1)
             
             columnheaders.append('P[xf,<n]')
