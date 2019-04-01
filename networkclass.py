@@ -98,7 +98,8 @@ class NetworkDynamics(object):
                 self.__adjecencylist.append(connections)
                 tmpadj[i][connections] = 1
         elif self.__intopology['type'] == 'full':
-            tmpadj = np.ones((self.__size,self.__size))
+            tmpadj = np.ones((self.__size,self.__size),dtype = np.int)
+            self.__adjecencylist = np.ones((self.__size,self.__size), dtype = np.int)
         else:
             raise NotImplementedError
         
@@ -146,7 +147,7 @@ class NetworkDynamics(object):
                 update is True
         if update:
             if len(histo) <= step:
-                histo = np.concatenate([histo,np.zeros(step - len(histo) + 1)])
+                histo = np.concatenate([histo,np.zeros(int(step - len(histo) + 1))])
             histo[step] += 1
         return histo
     
