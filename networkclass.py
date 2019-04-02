@@ -254,9 +254,9 @@ class NetworkDynamics(object):
             return self.__condprobNodes_flip,self.__condprobNodes_total
         elif key == 'histoinputchange':
             return self.__countinputflips
-        elif key == 'histoatflipnodes':
+        elif key == 'histoXFafterSF':
             return self.__histoXFafterSF
-        elif key == 'histoatflipinput':
+        elif key == 'histoSFafterXF':
             return self.__histoSFafterXF
 
 

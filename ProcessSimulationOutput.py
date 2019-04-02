@@ -49,8 +49,8 @@ def main():
             Csfn           = np.array([np.sum(Psfn[:m]) for m in range(len(n))])
             output         = np.concatenate([output, np.array([Cxfn,Csfn], dtype = np.float).T], axis = 1)
             
-            columnheaders.append('P[xf,<n]')
-            columnheaders.append('P[sf,<n]')
+            columnheaders.append('C[xf,<n]')
+            columnheaders.append('C[sf,<n]')
             
         if args.Remaining:
             RXn            = np.array([np.sum(Pxfn[m:]) for m in range(len(n))])

@@ -35,8 +35,8 @@ def main():
     condprobInput_total = np.array([],dtype=np.float)
     condprobNodes_flip  = np.array([],dtype=np.float)
     condprobNodes_total = np.array([],dtype=np.float)
-    histoatflipNodes    = np.array([],dtype=np.float)
-    histoatflipInput    = np.array([],dtype=np.float)
+    histoXFafterSF      = np.array([],dtype=np.float)
+    histoSFafterXF      = np.array([],dtype=np.float)
     
     histoinputchanges = list()
     
@@ -52,35 +52,36 @@ def main():
         histoS.append(network.histoS)
         
         cpSf,cpSt = network.condprobInput
-        if len(condprobInput_flip) < len(cpSf):
+        print(len(cpSf),len(cpSt))
+        if len(condprobInput_total) < len(cpSt):
             condprobInput_flip  = np.concatenate([condprobInput_flip, np.zeros(len(cpSf) - len(condprobInput_flip))])
             condprobInput_total = np.concatenate([condprobInput_total,np.zeros(len(cpSt) - len(condprobInput_total))])
         condprobInput_flip[:len(cpSf)]  += cpSf
         condprobInput_total[:len(cpSt)] += cpSt
         
         cpXf,cpXt = network.condprobNodes
-        if len(condprobNodes_flip) < len(cpXf):
+        if len(condprobNodes_total) < len(cpXt):
             condprobNodes_flip  = np.concatenate([condprobNodes_flip, np.zeros(len(cpXf) - len(condprobNodes_flip))])
             condprobNodes_total = np.concatenate([condprobNodes_total,np.zeros(len(cpXt) - len(condprobNodes_total))])
         condprobNodes_flip[:len(cpXf)]  += cpXf
         condprobNodes_total[:len(cpXt)] += cpXt
         
-        hafX = network.histoatflipnodes
-        if len(histoatflipNodes) < len(hafX):
-            histoatflipNodes = np.concatenate([histoatflipNodes,np.zeros(len(hafX) - len(histoatflipNodes))])
-        histoatflipNodes[:len(hafX)] += hafX
+        hXS = network.histoXFafterSF
+        if len(histoXFafterSF) < len(hXS):
+            histoXFafterSF = np.concatenate([histoXFafterSF,np.zeros(len(hXS) - len(histoXFafterSF))])
+        histoXFafterSF[:len(hXS)] += hXS
         
-        hafS = network.histoatflipinput
-        if len(histoatflipInput) < len(hafS):
-            histoatflipInput = np.concatenate([histoatflipInput,np.zeros(len(hafS) - len(histoatflipInput))])
-        histoatflipInput[:len(hafS)] += hafS
+        hSX = network.histoSFafterXF
+        if len(histoSFafterXF) < len(hSX):
+            histoSFafterXF = np.concatenate([histoSFafterXF,np.zeros(len(hSX) - len(histoSFafterXF))])
+        histoSFafterXF[:len(hSX)] += hSX
         
         if not args.HistoInputChangeFile is None:
             histoinputchanges.append(network.histoinputchange)
         
         
     # bring all measured histograms to the same size to store them in single file
-    histolen = np.max([np.max([len(h) for h in histoX]),np.max([len(h) for h in histoS]),len(condprobInput_total),len(condprobNodes_total),len(histoatflipInput),len(histoatflipNodes)])
+    histolen = np.max([np.max([len(h) for h in histoX]),np.max([len(h) for h in histoS]),len(condprobInput_total),len(condprobNodes_total),len(histoXFafterSF),len(histoSFafterXF)])
     totalhistoX = np.zeros(histolen,dtype = np.float)
     totalhistoS = np.zeros(histolen,dtype = np.float)
     
@@ -92,11 +93,11 @@ def main():
         condprobNodes_flip  = np.concatenate([condprobNodes_flip,np.zeros(histolen - len(condprobNodes_flip))])
         condprobNodes_total = np.concatenate([condprobNodes_total,np.ones(histolen - len(condprobNodes_total))])
     
-    if histolen > len(histoatflipInput):
-        histoatflipInput    = np.concatenate([histoatflipInput,np.zeros(histolen - len(histoatflipInput))])
+    if histolen > len(histoXFafterSF):
+        histoXFafterSF      = np.concatenate([histoXFafterSF,np.zeros(histolen - len(histoXFafterSF))])
     
-    if histolen > len(histoatflipNodes):
-        histoatflipNodes    = np.concatenate([histoatflipNodes,np.zeros(histolen - len(histoatflipNodes))])
+    if histolen > len(histoSFafterXF):
+        histoSFafterXF      = np.concatenate([histoSFafterXF,np.zeros(histolen - len(histoXFafterSF))])
     
     for h in histoX:
         totalhistoX[:len(h)] += h
@@ -109,7 +110,7 @@ def main():
     bins = np.arange(histolen)
     
     if args.verbose: print("save histogram recordings to '{}'".format(args.HistoOutfile))
-    np.savetxt(args.HistoOutfile,np.array([bins,totalhistoX * icountX, totalhistoS * icountS, condprobInput_flip, condprobInput_total, condprobNodes_flip, condprobNodes_total, histoatflipInput, histoatflipNodes]).T)
+    np.savetxt(args.HistoOutfile,np.array([bins,totalhistoX * icountX, totalhistoS * icountS, condprobInput_flip, condprobInput_total, condprobNodes_flip, condprobNodes_total, histoXFafterSF, histoSFafterXF]).T)
     # column:                              1    2                      3                      4                   5                    6                   7                    8                 9
 
     if not args.HistoInputChangeFile is None:

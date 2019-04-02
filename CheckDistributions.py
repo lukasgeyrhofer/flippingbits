@@ -13,13 +13,13 @@ def revert(x):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--infiles",           default = [],           type = str, nargs = "*",)
-    parser.add_argument("-o", "--outfileprefix",     default = "CheckDistr", type = str)
-    parser.add_argument("-F", "--fftoutfiles",       default = "CDfft",      type = str)
-    parser.add_argument("-m", "--maxtime",           default = None,         type = int)
-    parser.add_argument("-v", "--verbose",           default = False,        action = "store_true")
-    parser.add_argument("-C", "--DirectConvolution", default = False,        action = "store_true")
-    parser.add_argument("-M", "--maxorderFFT",       default = 4,            type = int)
+    parser.add_argument("-i", "--infiles",           default = [],              type = str, nargs = "*",)
+    parser.add_argument("-o", "--outfileprefix",     default = "CheckDistr",    type = str)
+    parser.add_argument("-F", "--fftoutfiles",       default = "CheckDistrFFT", type = str)
+    parser.add_argument("-M", "--maxorderFFT",       default = 4,               type = int)
+    parser.add_argument("-m", "--maxtime",           default = None,            type = int)
+    parser.add_argument("-v", "--verbose",           default = False,           action = "store_true")
+    parser.add_argument("-C", "--DirectConvolution", default = False,           action = "store_true")
     args = parser.parse_args()
 
     for fn in args.infiles:
@@ -94,7 +94,7 @@ def main():
         fPxfnCOMP = dict()
         for order in np.arange(start = 0, stop = args.maxorderFFT + 1e-2, step = 2, dtype = np.int):
             FxfzCOMP[order]  = FxfzCOMP0 * np.sum([np.power(Fsfz,2*a) for a in range(order/2)], axis = 0)
-            fPxfnCOMP[order] = np.real(np.fft.ifft(FxfzCOMP[order]))
+            fPxfnCOMP[order] = np.fft.ifft(FxfzCOMP[order])
             
             output           = np.concatenate([output,    np.array( [np.real(fPxfnCOMP[order]), np.imag(fPxfnCOMP[order])] ).T], axis = 1)
             fftoutput        = np.concatenate([fftoutput, np.array( [np.real(FxfzCOMP[order]), np.imag(FxfzCOMP[order])] ).T], axis = 1)
